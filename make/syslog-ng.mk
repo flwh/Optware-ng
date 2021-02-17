@@ -34,7 +34,7 @@ SYSLOG-NG_CONFLICTS=
 #
 # SYSLOG-NG_IPK_VERSION should be incremented when the ipk changes.
 #
-SYSLOG-NG_IPK_VERSION=2
+SYSLOG-NG_IPK_VERSION=3
 
 #
 # SYSLOG-NG_CONFFILES should be a list of user-editable files
@@ -108,6 +108,8 @@ $(SYSLOG-NG_BUILD_DIR)/.configured: $(DL_DIR)/$(SYSLOG-NG_SOURCE) $(SYSLOG-NG_PA
 		cat $(SYSLOG-NG_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(SYSLOG-NG_DIR) -p0; \
 	fi
 	mv $(BUILD_DIR)/$(SYSLOG-NG_DIR) $(@D)
+	# no LEXLIB
+	sed -i -e 's/ -lfl / /' $(@D)/configure
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(SYSLOG-NG_CPPFLAGS)" \

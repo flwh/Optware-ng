@@ -21,7 +21,7 @@
 # from your name or email address.  If you leave MAINTAINER set to
 # "NSLU2 Linux" other developers will feel free to edit.
 #
-PYTHON27_VERSION=2.7.9
+PYTHON27_VERSION=2.7.14
 PYTHON27_VERSION_MAJOR=2.7
 PYTHON27_SITE=http://python.org/ftp/python/$(PYTHON27_VERSION)
 PYTHON27_DIR=Python-$(PYTHON27_VERSION)
@@ -32,7 +32,7 @@ PYTHON27_MAINTAINER=Brian Zhou<bzhou@users.sf.net>
 PYTHON27_DESCRIPTION=Python is an interpreted, interactive, object-oriented programming language.
 PYTHON27_SECTION=misc
 PYTHON27_PRIORITY=optional
-PYTHON27_DEPENDS=readline, bzip2, openssl, libdb, zlib, libffi, sqlite, xz-utils
+PYTHON27_DEPENDS=readline, bzip2, openssl, libdb, zlib, libffi, sqlite, xz-utils, gdbm, gettext
 ifeq (libstdc++, $(filter libstdc++, $(PACKAGES)))
 PYTHON27_DEPENDS+=, libstdc++
 endif
@@ -42,7 +42,7 @@ PYTHON27_SUGGESTS=
 #
 # PYTHON27_IPK_VERSION should be incremented when the ipk changes.
 #
-PYTHON27_IPK_VERSION=2
+PYTHON27_IPK_VERSION=1
 
 #
 # PYTHON27_CONFFILES should be a list of user-editable files
@@ -55,8 +55,9 @@ PYTHON27_IPK_VERSION=2
 PYTHON27_CPPFLAGS=
 # workaround for uclibc bug, see http://www.geocities.com/robm351/uclibc/index-8.html?20063#sec:ldso-python
 # as for -lgcc_s flag, see: http://bugs.python.org/issue23340
+# for -lintl see #190
 ifeq ($(LIBC_STYLE),uclibc)
-PYTHON27_LDFLAGS=-lgcc_s -lbz2 -lcrypt -ldb-$(LIBDB_LIB_VERSION) -lncurses -lreadline -lssl -lz -lffi
+PYTHON27_LDFLAGS=-lgcc_s -lbz2 -lcrypt -ldb-$(LIBDB_LIB_VERSION) -lncurses -lreadline -lssl -lz -lffi -lintl
 else
 PYTHON27_LDFLAGS=
 endif
@@ -86,6 +87,7 @@ PYTHON27_PATCHES=\
 	$(PYTHON27_SOURCE_DIR)/setup.py.patch \
 	$(PYTHON27_SOURCE_DIR)/Lib-site.py.patch \
 	$(PYTHON27_SOURCE_DIR)/Lib-distutils-distutils.cfg.patch \
+	$(PYTHON27_SOURCE_DIR)/Setup.dist.$(LIBC_STYLE).patch \
 
 ifeq ($(NCURSES_FOR_OPTWARE_TARGET), ncurses)
 PYTHON27_PATCHES+= $(PYTHON27_SOURCE_DIR)/disable-ncursesw.patch
@@ -128,12 +130,13 @@ ifeq (libstdc++, $(filter libstdc++, $(PACKAGES)))
 	$(MAKE) libstdc++-stage
 endif
 	$(MAKE) bzip2-stage readline-stage openssl-stage libdb-stage sqlite-stage zlib-stage xz-utils-stage \
-		libffi-stage libffi-host-stage zlib-host-stage xz-utils-host-stage $(NCURSES_FOR_OPTWARE_TARGET)-stage
+		libffi-stage libffi-host-stage openssl-host-stage zlib-host-stage xz-utils-host-stage $(NCURSES_FOR_OPTWARE_TARGET)-stage \
+		gdbm-stage gettext-stage ncurses-host-stage readline-host-stage
 	$(MAKE) autoconf-host-stage
 	rm -rf $(BUILD_DIR)/$(PYTHON27_DIR) $(@D) $(HOST_STAGING_PREFIX)/bin/python2.7
 	$(PYTHON27_UNZIP) $(DL_DIR)/$(PYTHON27_SOURCE) | tar -C $(BUILD_DIR) -xf -
 	cat $(PYTHON27_PATCHES) | $(PATCH) -bd $(BUILD_DIR)/$(PYTHON27_DIR) -p1
-	sed -i -e '/\$$absconfigcommand/s|.*|    AS="" LD="" CC="" CXX="" AR="" STRIP="" RANLIB="" LDFLAGS="-L$(HOST_STAGING_LIB_DIR)" CPPFLAGS="-I$(HOST_STAGING_INCLUDE_DIR)" \$$absconfigcommand --prefix=/opt --with-system-ffi|' $(BUILD_DIR)/$(PYTHON27_DIR)/configure.ac
+	sed -i -e '/\$$absconfigcommand/s|.*|    AS="" LD="" CC="" CXX="" AR="" STRIP="" RANLIB="" LDFLAGS="-L$(HOST_STAGING_LIB_DIR) -Wl,-rpath,$(HOST_STAGING_LIB_DIR) -Wl,-rpath-link,$(HOST_STAGING_LIB_DIR)" CPPFLAGS="-I$(HOST_STAGING_INCLUDE_DIR)" \$$absconfigcommand --prefix=/opt --with-system-ffi|' $(BUILD_DIR)/$(PYTHON27_DIR)/configure.ac
 	$(AUTORECONF1.10) -vif $(BUILD_DIR)/$(PYTHON27_DIR)
 	mkdir -p $(@D)
 	cd $(@D); (\
@@ -161,6 +164,9 @@ endif
 		--enable-unicode=ucs4 \
 		--with-system-ffi \
 	)
+ifeq ($(LIBC_STYLE),uclibc)
+	echo "nis nismodule.c -lnsl" >> $(PYTHON27_BUILD_DIR)/buildpython27/Modules/Setup.local
+endif
 	touch $@
 
 python27-unpack: $(PYTHON27_BUILD_DIR)/.configured
@@ -245,6 +251,7 @@ $(PYTHON27_IPK): $(PYTHON27_BUILD_DIR)/.built
 	       -e 's|$(STAGING_LIB_DIR)|$(TARGET_PREFIX)/lib|g' \
 	       -e '/^RUNSHARED=/s|=.*|=|' \
 	       $(PYTHON27_IPK_DIR)$(TARGET_PREFIX)/lib/python2.7/config/Makefile
+	sed -i -e 's|$(HOST_STAGING_PREFIX)|$(TARGET_PREFIX)|g' $(PYTHON27_IPK_DIR)$(TARGET_PREFIX)/lib/python2.7/_sysconfigdata.py
 #ifeq ($(OPTWARE_WRITE_OUTSIDE_OPT_ALLOWED),true)
 #	$(INSTALL) -d $(PYTHON27_IPK_DIR)/usr/bin
 #	ln -s $(TARGET_PREFIX)/bin/python $(PYTHON27_IPK_DIR)/usr/bin/python

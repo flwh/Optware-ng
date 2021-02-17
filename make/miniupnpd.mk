@@ -41,7 +41,7 @@ MINIUPNPD_CONFLICTS=
 #
 # MINIUPNPD_IPK_VERSION should be incremented when the ipk changes.
 #
-MINIUPNPD_IPK_VERSION=2
+MINIUPNPD_IPK_VERSION=4
 
 #
 # MINIUPNPD_CONFFILES should be a list of user-editable files

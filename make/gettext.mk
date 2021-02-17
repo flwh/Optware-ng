@@ -5,7 +5,7 @@
 ###########################################################
 
 #
-# GETTEXT_VERSION, GETTEXT_SITE and GETTEXT_SOURCE define
+# GETTEXT_VERSION_EXACT, GETTEXT_SITE and GETTEXT_SOURCE define
 # the upstream location of the source code for the package.
 # GETTEXT_DIR is the directory which is created when the source
 # archive is unpacked.
@@ -15,19 +15,25 @@
 # You should change all these variables to suit your package.
 #
 GETTEXT_SITE=http://ftp.gnu.org/gnu/gettext
-GETTEXT_VERSION=0.19.6
+GETTEXT_VERSION_EXACT=0.19.8.1
+GETTEXT_VERSION=0.19.8
 GETTEXT_VERSION_MAJOR=0.19
-GETTEXT_SOURCE=gettext-$(GETTEXT_VERSION).tar.gz
-GETTEXT_DIR=gettext-$(GETTEXT_VERSION)
+GETTEXT_SOURCE=gettext-$(GETTEXT_VERSION_EXACT).tar.gz
+GETTEXT_DIR=gettext-$(GETTEXT_VERSION_EXACT)
 GETTEXT_UNZIP=zcat
 GETTEXT_SECTION=devel
+LIBINTL_SECTION=libs
 GETTEXT_PRIORITY=optional
+LIBINTL_PRIORITY=optional
 GETTEXT_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 GETTEXT_DESCRIPTION=Set of tools for producing multi-lingual messages
+LIBINTL_DESCRIPTION=gettext libintl
 ifneq (libiconv, $(filter libiconv, $(PACKAGES)))
-GETTEXT_DEPENDS=
+GETTEXT_DEPENDS=libintl, libunistring, ncurses
+LIBINTL_DEPENDS=
 else
-GETTEXT_DEPENDS=libiconv
+GETTEXT_DEPENDS=libintl, libunistring, ncurses, libiconv
+LIBINTL_DEPENDS=libiconv
 endif
 GETTEXT_SUGGESTS=
 GETTEXT_CONFLICTS=
@@ -35,7 +41,7 @@ GETTEXT_CONFLICTS=
 #
 # GETTEXT_IPK_VERSION should be incremented when the ipk changes.
 #
-GETTEXT_IPK_VERSION=1
+GETTEXT_IPK_VERSION=5
 
 #
 # GETTEXT_CONFFILES should be a list of user-editable files
@@ -73,8 +79,12 @@ endif
 #
 GETTEXT_BUILD_DIR=$(BUILD_DIR)/gettext
 GETTEXT_SOURCE_DIR=$(SOURCE_DIR)/gettext
-GETTEXT_IPK_DIR=$(BUILD_DIR)/gettext-$(GETTEXT_VERSION)-ipk
-GETTEXT_IPK=$(BUILD_DIR)/gettext_$(GETTEXT_VERSION)-$(GETTEXT_IPK_VERSION)_$(TARGET_ARCH).ipk
+
+GETTEXT_IPK_DIR=$(BUILD_DIR)/gettext-$(GETTEXT_VERSION_EXACT)-ipk
+GETTEXT_IPK=$(BUILD_DIR)/gettext_$(GETTEXT_VERSION_EXACT)-$(GETTEXT_IPK_VERSION)_$(TARGET_ARCH).ipk
+
+LIBINTL_IPK_DIR=$(BUILD_DIR)/libintl-$(GETTEXT_VERSION_EXACT)-ipk
+LIBINTL_IPK=$(BUILD_DIR)/libintl_$(GETTEXT_VERSION_EXACT)-$(GETTEXT_IPK_VERSION)_$(TARGET_ARCH).ipk
 
 GETTEXT_HOST_BUILD_DIR=$(HOST_BUILD_DIR)/gettext
 
@@ -142,10 +152,12 @@ $(GETTEXT_BUILD_DIR)/.configured: $(DL_DIR)/$(GETTEXT_SOURCE) $(GETTEXT_PATCHES)
 ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
 	$(MAKE) libiconv-stage
 endif
+	$(MAKE) libunistring-stage ncurses-stage
 	rm -rf $(BUILD_DIR)/$(GETTEXT_DIR) $(@D)
 	$(GETTEXT_UNZIP) $(DL_DIR)/$(GETTEXT_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	cat $(GETTEXT_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(GETTEXT_DIR) -p1
 	mv $(BUILD_DIR)/$(GETTEXT_DIR) $(@D)
+	$(AUTORECONF1.14) -vif $(@D)
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(GETTEXT_CPPFLAGS)" \
@@ -158,7 +170,12 @@ endif
 		--target=$(GNU_TARGET_NAME) \
 		--prefix=$(TARGET_PREFIX) \
 		--$(GETTEXT_NLS)-nls \
+		--with-included-libacl \
+		--with-included-libcroco \
+		--with-included-glib \
 		--disable-static \
+		--disable-rpath \
+		--disable-native-java \
 	)
 	touch $@
 
@@ -212,13 +229,28 @@ $(GETTEXT_IPK_DIR)/CONTROL/control:
 	@echo "Architecture: $(TARGET_ARCH)" >>$@
 	@echo "Priority: $(GETTEXT_PRIORITY)" >>$@
 	@echo "Section: $(GETTEXT_SECTION)" >>$@
-	@echo "Version: $(GETTEXT_VERSION)-$(GETTEXT_IPK_VERSION)" >>$@
+	@echo "Version: $(GETTEXT_VERSION_EXACT)-$(GETTEXT_IPK_VERSION)" >>$@
 	@echo "Maintainer: $(GETTEXT_MAINTAINER)" >>$@
 	@echo "Source: $(GETTEXT_SITE)/$(GETTEXT_SOURCE)" >>$@
 	@echo "Description: $(GETTEXT_DESCRIPTION)" >>$@
 	@echo "Depends: $(GETTEXT_DEPENDS)" >>$@
 	@echo "Suggests: $(GETTEXT_SUGGESTS)" >>$@
 	@echo "Conflicts: $(GETTEXT_CONFLICTS)" >>$@
+
+$(LIBINTL_IPK_DIR)/CONTROL/control:
+	@$(INSTALL) -d $(LIBINTL_IPK_DIR)/CONTROL
+	@rm -f $@
+	@echo "Package: libintl" >>$@
+	@echo "Architecture: $(TARGET_ARCH)" >>$@
+	@echo "Priority: $(LIBINTL_PRIORITY)" >>$@
+	@echo "Section: $(LIBINTL_SECTION)" >>$@
+	@echo "Version: $(GETTEXT_VERSION_EXACT)-$(GETTEXT_IPK_VERSION)" >>$@
+	@echo "Maintainer: $(GETTEXT_MAINTAINER)" >>$@
+	@echo "Source: $(GETTEXT_SITE)/$(GETTEXT_SOURCE)" >>$@
+	@echo "Description: $(LIBINTL_DESCRIPTION)" >>$@
+	@echo "Depends: $(LIBINTL_DEPENDS)" >>$@
+	@echo "Suggests: $(LIBINTL_SUGGESTS)" >>$@
+	@echo "Conflicts: $(LIBINTL_CONFLICTS)" >>$@
 
 
 #
@@ -233,8 +265,9 @@ $(GETTEXT_IPK_DIR)/CONTROL/control:
 #
 # You may need to patch your application to make it use these locations.
 #
-$(GETTEXT_IPK): $(GETTEXT_BUILD_DIR)/.built
-	rm -rf $(GETTEXT_IPK_DIR) $(BUILD_DIR)/gettext_*_$(TARGET_ARCH).ipk
+$(GETTEXT_IPK) $(LIBINTL_IPK): $(GETTEXT_BUILD_DIR)/.built
+	rm -rf  $(GETTEXT_IPK_DIR) $(BUILD_DIR)/gettext_*_$(TARGET_ARCH).ipk \
+		$(LIBINTL_IPK_DIR) $(BUILD_DIR)/libintl_*_$(TARGET_ARCH).ipk
 	$(MAKE) -C $(GETTEXT_BUILD_DIR) DESTDIR=$(GETTEXT_IPK_DIR) install
 	rm -f $(GETTEXT_IPK_DIR)$(TARGET_PREFIX)/share/info/dir
 	if [ ! -f $(GETTEXT_IPK_DIR)$(TARGET_PREFIX)/lib/libintl.so ]; then \
@@ -243,7 +276,12 @@ $(GETTEXT_IPK): $(GETTEXT_BUILD_DIR)/.built
 			ln -s libgnuintl.so $(GETTEXT_IPK_DIR)$(TARGET_PREFIX)/lib/libintl.so; \
 		fi; \
 	fi
-	$(STRIP_COMMAND) $(GETTEXT_IPK_DIR)$(TARGET_PREFIX)/lib/*.so*
+	-$(STRIP_COMMAND) 	$(GETTEXT_IPK_DIR)$(TARGET_PREFIX)/lib/*.so* \
+				$(GETTEXT_IPK_DIR)$(TARGET_PREFIX)/{bin,lib/gettext}/* 2>/dev/null
+	$(INSTALL) -d $(LIBINTL_IPK_DIR)$(TARGET_PREFIX)/lib
+	mv -f $(GETTEXT_IPK_DIR)$(TARGET_PREFIX)/lib/lib*intl.so* $(LIBINTL_IPK_DIR)$(TARGET_PREFIX)/lib
+	$(MAKE) $(LIBINTL_IPK_DIR)/CONTROL/control
+	cd $(BUILD_DIR); $(IPKG_BUILD) $(LIBINTL_IPK_DIR)
 #	$(INSTALL) -d $(GETTEXT_IPK_DIR)$(TARGET_PREFIX)/etc/
 #	$(INSTALL) -m 755 $(GETTEXT_SOURCE_DIR)/gettext.conf $(GETTEXT_IPK_DIR)$(TARGET_PREFIX)/etc/gettext.conf
 #	$(INSTALL) -d $(GETTEXT_IPK_DIR)$(TARGET_PREFIX)/etc/init.d
@@ -257,7 +295,7 @@ $(GETTEXT_IPK): $(GETTEXT_BUILD_DIR)/.built
 #
 # This is called from the top level makefile to create the IPK file.
 #
-gettext-ipk: $(GETTEXT_IPK)
+gettext-ipk: $(GETTEXT_IPK) $(LIBINTL_IPK)
 
 #
 # This is called from the top level makefile to clean all of the built files.
@@ -271,12 +309,14 @@ gettext-clean:
 # directories.
 #
 gettext-dirclean:
-	rm -rf $(BUILD_DIR)/$(GETTEXT_DIR) $(GETTEXT_BUILD_DIR) $(GETTEXT_IPK_DIR) $(GETTEXT_IPK)
+	rm -rf  $(BUILD_DIR)/$(GETTEXT_DIR) $(GETTEXT_BUILD_DIR) \
+		$(GETTEXT_IPK_DIR) $(GETTEXT_IPK) \
+		$(LIBINTL_IPK_DIR) $(LIBINTL_IPK)
 
 #
 #
 # Some sanity check for the package.
 #
-gettext-check: $(GETTEXT_IPK)
+gettext-check: $(GETTEXT_IPK) $(LIBINTL_IPK)
 	perl scripts/optware-check-package.pl --target=$(OPTWARE_TARGET) $^
 

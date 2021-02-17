@@ -29,14 +29,14 @@ UTIL_LINUX_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 UTIL_LINUX_DESCRIPTION=A suite of essential utilities for any Linux system.
 UTIL_LINUX_SECTION=misc
 UTIL_LINUX_PRIORITY=optional
-UTIL_LINUX_DEPENDS=e2fslibs, ncursesw, libtinfo, zlib, libudev, readline
+UTIL_LINUX_DEPENDS=ncursesw, zlib, libudev, readline
 UTIL_LINUX_SUGGESTS=python27
 UTIL_LINUX_CONFLICTS=
 
 #
 # UTIL_LINUX_IPK_VERSION should be incremented when the ipk changes.
 #
-UTIL_LINUX_IPK_VERSION=1
+UTIL_LINUX_IPK_VERSION=5
 
 #
 # UTIL_LINUX_CONFFILES should be a list of user-editable files
@@ -46,18 +46,23 @@ UTIL_LINUX_IPK_VERSION=1
 # UTIL_LINUX_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-#UTIL_LINUX_PATCHES=\
-	$(UTIL_LINUX_SOURCE_DIR)/llseek.patch \
-	$(UTIL_LINUX_SOURCE_DIR)/umount2.patch \
-	$(UTIL_LINUX_SOURCE_DIR)/loop-aes-util-linux-2.12r.patch \
-	$(UTIL_LINUX_SOURCE_DIR)/no-sigsetmask-conditional.patch
+UTIL_LINUX_PATCHES=\
+$(UTIL_LINUX_SOURCE_DIR)/no_fstatat.patch
+
+ifeq ($(OPTWARE_TARGET), $(filter buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
+UTIL_LINUX_PATCHES += $(UTIL_LINUX_SOURCE_DIR)/no_signalfd.patch
+endif
 
 #
 # If the compilation of the package requires additional
 # compilation or linking flags, then list them here.
 #
-UTIL_LINUX_CPPFLAGS=-I$(STAGING_INCLUDE_DIR)/ncursesw -I$(STAGING_INCLUDE_DIR)/python2.7
+UTIL_LINUX_CPPFLAGS=-I$(STAGING_INCLUDE_DIR)/python2.7
 UTIL_LINUX_LDFLAGS=
+
+ifeq ($(OPTWARE_TARGET), $(filter buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
+UTIL_LINUX_CPPFLAGS += -D__user=''
+endif
 
 #
 # UTIL_LINUX_BUILD_DIR is the directory in which the build is done.
@@ -109,28 +114,31 @@ util-linux-source: $(DL_DIR)/$(UTIL_LINUX_SOURCE) $(UTIL_LINUX_PATCHES)
 # shown below to make various patches to it.
 #
 $(UTIL_LINUX_BUILD_DIR)/.configured: $(DL_DIR)/$(UTIL_LINUX_SOURCE) $(UTIL_LINUX_PATCHES) make/util-linux.mk
-	$(MAKE) e2fsprogs-stage ncursesw-stage libtinfo-stage zlib-stage \
+	$(MAKE) ncursesw-stage zlib-stage \
 		python27-stage udev-stage readline-stage
 	rm -rf $(BUILD_DIR)/$(UTIL_LINUX_DIR) $(@D)
 	$(UTIL_LINUX_UNZIP) $(DL_DIR)/$(UTIL_LINUX_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(UTIL_LINUX_PATCHES)" ; \
 		then cat $(UTIL_LINUX_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(UTIL_LINUX_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(UTIL_LINUX_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(UTIL_LINUX_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(UTIL_LINUX_DIR) $(@D) ; \
 	fi
+	sed -i -e '/security\/pam_appl.h/d' $(@D)/configure.ac
+	$(AUTORECONF1.14) -vif $(@D)
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
-		CPPFLAGS="$(STAGING_CPPFLAGS) $(UTIL_LINUX_CPPFLAGS)" \
+		CPPFLAGS="-I$(STAGING_INCLUDE_DIR)/ncursesw $(STAGING_CPPFLAGS) $(UTIL_LINUX_CPPFLAGS)" \
 		CFLAGS="$(STAGING_CPPFLAGS) $(UTIL_LINUX_CPPFLAGS)" \
-		LDFLAGS="$(STAGING_LDFLAGS) $(UTIL_LINUX_LDFLAGS)" \
+		LDFLAGS="-Wl,-rpath,$(TARGET_PREFIX)/lib/util-linux $(STAGING_LDFLAGS) $(UTIL_LINUX_LDFLAGS)" \
 		PKG_CONFIG_PATH=$(STAGING_LIB_DIR)/pkgconfig \
 		./configure \
 		--build=$(GNU_HOST_NAME) \
 		--host=$(GNU_TARGET_NAME) \
 		--target=$(GNU_TARGET_NAME) \
 		--prefix=$(TARGET_PREFIX) \
+		--libdir=$(TARGET_PREFIX)/lib/util-linux \
 		--with-bashcompletiondir=$(TARGET_PREFIX)/share/bash-completion/completions \
 		--disable-use-tty-group \
 		--disable-nls \
@@ -166,7 +174,7 @@ $(UTIL_LINUX_BUILD_DIR)/.built: $(UTIL_LINUX_BUILD_DIR)/.configured
 		PYTHON_CFLAGS='-I$(STAGING_INCLUDE_DIR)/python2.7  ' \
 		PYTHON_LIBS='-lpython2.7  ' \
 		TINFO_CFLAGS='-I$(STAGING_INCLUDE_DIR)/ncursesw  ' \
-		TINFO_LIBS='-ltinfo  ' \
+		TINFO_LIBS='-lncursesw ' \
 		;
 	touch $@
 
@@ -237,10 +245,9 @@ $(UTIL_LINUX_IPK): $(UTIL_LINUX_BUILD_DIR)/.built
 		USRSHAREMISC_DIR=$(TARGET_PREFIX)/share/misc \
 		LOCALEDIR=$(TARGET_PREFIX)/share/locale \
 		;
-	rm -rf $(UTIL_LINUX_IPK_DIR)$(TARGET_PREFIX)/share/info
+	rm -rf $(UTIL_LINUX_IPK_DIR)$(TARGET_PREFIX)/share/info $(UTIL_LINUX_IPK_DIR)$(TARGET_PREFIX)/lib/util-linux/*.la
 	$(STRIP_COMMAND) `ls $(UTIL_LINUX_IPK_DIR)$(TARGET_PREFIX)/bin/* | grep -v chkdupexe`
-	rm -f $(UTIL_LINUX_IPK_DIR)$(TARGET_PREFIX)/sbin/swapoff
-	$(STRIP_COMMAND) $(UTIL_LINUX_IPK_DIR)$(TARGET_PREFIX)/sbin/*
+	$(STRIP_COMMAND) $(UTIL_LINUX_IPK_DIR)$(TARGET_PREFIX)/sbin/* $(UTIL_LINUX_IPK_DIR)$(TARGET_PREFIX)/lib/util-linux/*.so
 	$(MAKE) $(UTIL_LINUX_IPK_DIR)/CONTROL/control
 	echo "#!/bin/sh" > $(UTIL_LINUX_IPK_DIR)/CONTROL/postinst
 	echo "#!/bin/sh" > $(UTIL_LINUX_IPK_DIR)/CONTROL/prerm
@@ -258,10 +265,6 @@ $(UTIL_LINUX_IPK): $(UTIL_LINUX_BUILD_DIR)/.built
 	for link in `find $(UTIL_LINUX_IPK_DIR)$(TARGET_PREFIX)/bin -type l; find $(UTIL_LINUX_IPK_DIR)$(TARGET_PREFIX)/sbin -type l`; do \
 		ln -sf util-linux-`readlink $$link` $$link; \
 	done
-	echo "update-alternatives --install $(TARGET_PREFIX)/sbin/swapoff swapoff $(TARGET_PREFIX)/sbin/util-linux-swapon 80" \
-		>> $(UTIL_LINUX_IPK_DIR)/CONTROL/postinst
-	echo "update-alternatives --remove swapoff $(TARGET_PREFIX)/sbin/util-linux-swapon" \
-		>> $(UTIL_LINUX_IPK_DIR)/CONTROL/prerm
 	if test -n "$(UPD-ALT_PREFIX)"; then \
 		sed -i -e '/^[ 	]*update-alternatives /s|update-alternatives|$(UPD-ALT_PREFIX)/bin/&|' \
 			$(UTIL_LINUX_IPK_DIR)/CONTROL/postinst $(UTIL_LINUX_IPK_DIR)/CONTROL/prerm; \

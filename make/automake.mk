@@ -17,7 +17,7 @@ AUTOMAKE_PRIORITY=optional
 AUTOMAKE_DEPENDS=autoconf
 AUTOMAKE_CONFLICTS=
 
-AUTOMAKE_IPK_VERSION=3
+AUTOMAKE_IPK_VERSION=5
 
 AUTOMAKE_BUILD_DIR=$(BUILD_DIR)/automake
 AUTOMAKE_SOURCE_DIR=$(SOURCE_DIR)/automake
@@ -32,12 +32,19 @@ $(DL_DIR)/$(AUTOMAKE_SOURCE):
 	$(WGET) -P $(@D) $(AUTOMAKE_SITE)/$(@F) || \
 	$(WGET) -P $(@D) $(SOURCES_NLO_SITE)/$(@F)
 
+AUTOMAKE_PATCHES=\
+$(AUTOMAKE_SOURCE_DIR)/automake-escape_left_brace.patch \
+
 automake-source: $(DL_DIR)/$(AUTOMAKE_SOURCE) $(AUTOMAKE_PATCHES)
 
 $(AUTOMAKE_HOST_BUILD_DIR)/.built: host/.configured $(DL_DIR)/$(AUTOMAKE_SOURCE) make/automake.mk
 	$(MAKE) xz-utils-host-stage autoconf-host-stage
 	rm -rf $(HOST_BUILD_DIR)/$(AUTOMAKE_DIR) $(@D)
 	$(AUTOMAKE_UNZIP) $(DL_DIR)/$(AUTOMAKE_SOURCE) | tar -C $(HOST_BUILD_DIR) -xvf -
+	if test -n "$(AUTOMAKE_PATCHES)" ; \
+		then cat $(AUTOMAKE_PATCHES) | \
+		$(PATCH) -d $(HOST_BUILD_DIR)/$(AUTOMAKE_DIR) -p1 ; \
+	fi
 	mv $(HOST_BUILD_DIR)/$(AUTOMAKE_DIR) $(@D)
 	(cd $(@D); \
 		AUTOCONF="$(HOST_STAGING_PREFIX)/bin/autoconf" \
@@ -62,6 +69,10 @@ $(AUTOMAKE_BUILD_DIR)/.configured: $(DL_DIR)/$(AUTOMAKE_SOURCE) $(AUTOMAKE_PATCH
 	$(MAKE) xz-utils-host-stage autoconf-host-stage
 	rm -rf $(BUILD_DIR)/$(AUTOMAKE_DIR) $(@D)
 	$(AUTOMAKE_UNZIP) $(DL_DIR)/$(AUTOMAKE_SOURCE) | tar -C $(BUILD_DIR) -xvf -
+	if test -n "$(AUTOMAKE_PATCHES)" ; \
+		then cat $(AUTOMAKE_PATCHES) | \
+		$(PATCH) -d $(BUILD_DIR)/$(AUTOMAKE_DIR) -p1 ; \
+	fi
 	mv $(BUILD_DIR)/$(AUTOMAKE_DIR) $(@D)
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
@@ -116,7 +127,8 @@ $(AUTOMAKE_IPK): $(AUTOMAKE_BUILD_DIR)/.built
 	$(INSTALL) -d $(AUTOMAKE_IPK_DIR)$(TARGET_PREFIX)/share/automake-$(AUTOMAKE_VER)/am
 	$(MAKE) -C $(AUTOMAKE_BUILD_DIR) DESTDIR=$(AUTOMAKE_IPK_DIR) install
 	rm -f $(AUTOMAKE_IPK_DIR)$(TARGET_PREFIX)/share/info/dir
-	sed -i -e 's|/usr/bin/perl|$(TARGET_PREFIX)/bin/perl|g' $(AUTOMAKE_IPK_DIR)$(TARGET_PREFIX)/bin/*
+	sed -i -e 's|/usr/bin/perl|$(TARGET_PREFIX)/bin/perl|g' -e 's|$(HOST_STAGING_PREFIX)|$(TARGET_PREFIX)|g' \
+		$(AUTOMAKE_IPK_DIR)$(TARGET_PREFIX)/bin/*
 	$(MAKE) $(AUTOMAKE_IPK_DIR)/CONTROL/control
 	rm -f $(AUTOMAKE_IPK_DIR)$(TARGET_PREFIX)/info/dir
 	rm -f $(AUTOMAKE_IPK_DIR)$(TARGET_PREFIX)/bin/automake $(AUTOMAKE_IPK_DIR)$(TARGET_PREFIX)/bin/aclocal

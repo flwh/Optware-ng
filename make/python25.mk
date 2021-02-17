@@ -32,7 +32,7 @@ PYTHON25_MAINTAINER=Brian Zhou<bzhou@users.sf.net>
 PYTHON25_DESCRIPTION=Python is an interpreted, interactive, object-oriented programming language.
 PYTHON25_SECTION=misc
 PYTHON25_PRIORITY=optional
-PYTHON25_DEPENDS=readline, bzip2, openssl, libdb, zlib, libffi, sqlite
+PYTHON25_DEPENDS=readline, bzip2, openssl, libdb, zlib, libffi, sqlite, gdbm, gettext
 ifeq (libstdc++, $(filter libstdc++, $(PACKAGES)))
 PYTHON25_DEPENDS+=, libstdc++
 endif
@@ -42,7 +42,7 @@ PYTHON25_SUGGESTS=
 #
 # PYTHON25_IPK_VERSION should be incremented when the ipk changes.
 #
-PYTHON25_IPK_VERSION=5
+PYTHON25_IPK_VERSION=8
 
 #
 # PYTHON25_CONFFILES should be a list of user-editable files
@@ -131,7 +131,8 @@ ifeq (libstdc++, $(filter libstdc++, $(PACKAGES)))
 	$(MAKE) libstdc++-stage
 endif
 	$(MAKE) bzip2-stage readline-stage openssl-stage libdb-stage sqlite-stage zlib-stage \
-		libffi-stage libffi-host-stage zlib-host-stage $(NCURSES_FOR_OPTWARE_TARGET)-stage
+		libffi-stage libffi-host-stage zlib-host-stage $(NCURSES_FOR_OPTWARE_TARGET)-stage \
+		gdbm-stage gettext-stage
 	rm -rf $(BUILD_DIR)/$(PYTHON25_DIR) $(@D) $(HOST_STAGING_PREFIX)/bin/python2.5
 	$(PYTHON25_UNZIP) $(DL_DIR)/$(PYTHON25_SOURCE) | tar -C $(BUILD_DIR) -xf -
 	cd $(BUILD_DIR)/$(PYTHON25_DIR); \
@@ -191,14 +192,14 @@ python25: $(PYTHON25_BUILD_DIR)/.built
 #
 $(PYTHON25_BUILD_DIR)/.staged: $(PYTHON25_BUILD_DIR)/.built
 	rm -f $@
-	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install
+	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install -j 1
 	touch $@
 
 python25-stage: $(PYTHON25_BUILD_DIR)/.staged
 
 $(HOST_STAGING_PREFIX)/bin/python2.5: host/.configured make/python25.mk
 	$(MAKE) $(PYTHON25_BUILD_DIR)/.built
-	$(MAKE) -C $(PYTHON25_BUILD_DIR)/buildpython25 DESTDIR=$(HOST_STAGING_DIR) install
+	$(MAKE) -C $(PYTHON25_BUILD_DIR)/buildpython25 DESTDIR=$(HOST_STAGING_DIR) install -j 1
 	rm -f $(@D)/python
 
 python25-host-stage: $(HOST_STAGING_PREFIX)/bin/python2.5
@@ -234,7 +235,7 @@ $(PYTHON25_IPK_DIR)/CONTROL/control:
 #
 $(PYTHON25_IPK): $(PYTHON25_BUILD_DIR)/.built
 	rm -rf $(PYTHON25_IPK_DIR) $(BUILD_DIR)/python25_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(PYTHON25_BUILD_DIR) DESTDIR=$(PYTHON25_IPK_DIR) install
+	$(MAKE) -C $(PYTHON25_BUILD_DIR) DESTDIR=$(PYTHON25_IPK_DIR) install -j 1
 	$(STRIP_COMMAND) $(PYTHON25_IPK_DIR)$(TARGET_PREFIX)/bin/python$(PYTHON25_VERSION_MAJOR)
 	$(STRIP_COMMAND) $(PYTHON25_IPK_DIR)$(TARGET_PREFIX)/lib/python$(PYTHON25_VERSION_MAJOR)/lib-dynload/*.so
 	chmod 755 $(PYTHON25_IPK_DIR)$(TARGET_PREFIX)/lib/libpython$(PYTHON25_VERSION_MAJOR).so.1.0

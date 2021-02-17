@@ -35,7 +35,7 @@ FLAC_CONFLICTS=
 #
 # FLAC_IPK_VERSION should be incremented when the ipk changes.
 #
-FLAC_IPK_VERSION=1
+FLAC_IPK_VERSION=2
 
 #
 # FLAC_CONFFILES should be a list of user-editable files
@@ -54,7 +54,7 @@ FLAC_CONFFILES=
 FLAC_CPPFLAGS=
 FLAC_LDFLAGS=
 FLAC_CONFIG_OPTS=$(strip \
-$(if $(filter syno-e500, $(OPTWARE_TARGET)), --disable-altivec, \
+$(if $(filter ct-ng-ppc-e500v2, $(OPTWARE_TARGET)), --disable-altivec, \
 $(if $(filter vt4, $(OPTWARE_TARGET)), --disable-cpplibs, \
 )))
 

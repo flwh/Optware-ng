@@ -28,13 +28,8 @@
 #
 INETUTILS_NAME=inetutils
 INETUTILS_SITE=ftp://ftp.gnu.org/pub/gnu/inetutils
-ifneq ($(OPTWARE_TARGET), wl500g)
 INETUTILS_VERSION=1.9
-INETUTILS_IPK_VERSION=1
-else
-INETUTILS_VERSION=1.4.2
-INETUTILS_IPK_VERSION=11
-endif
+INETUTILS_IPK_VERSION=2
 INETUTILS_SOURCE=$(INETUTILS_NAME)-$(INETUTILS_VERSION).tar.gz
 INETUTILS_DIR=$(INETUTILS_NAME)-$(INETUTILS_VERSION)
 INETUTILS_UNZIP=zcat
@@ -43,6 +38,9 @@ INETUTILS_DESCRIPTION=A set of common daemons and clients found on commercial UN
 INETUTILS_SECTION=net
 INETUTILS_PRIORITY=optional
 INETUTILS_DEPENDS=ncurses, zlib, readline
+ifeq (uclibc, $(LIBC_STYLE))
+INETUTILS_DEPENDS +=, librpc-uclibc
+endif
 
 
 #
@@ -61,6 +59,9 @@ INETUTILS_PATCHES=
 #
 INETUTILS_CPPFLAGS=
 INETUTILS_LDFLAGS=
+ifeq (uclibc, $(LIBC_STYLE))
+INETUTILS_LDFLAGS += -lrpc-uclibc
+endif
 
 #
 # INETUTILS_BUILD_DIR is the directory in which the build is done.
@@ -109,6 +110,9 @@ inetutils-source: $(DL_DIR)/$(INETUTILS_SOURCE) $(INETUTILS_PATCHES)
 #
 $(INETUTILS_BUILD_DIR)/.configured: $(DL_DIR)/$(INETUTILS_SOURCE) $(INETUTILS_PATCHES) make/inetutils.mk
 	$(MAKE) ncurses-stage zlib-stage readline-stage
+ifeq (uclibc, $(LIBC_STYLE))
+	$(MAKE) librpc-uclibc-stage
+endif
 	rm -rf $(BUILD_DIR)/$(INETUTILS_DIR) $(@D)
 	$(INETUTILS_UNZIP) $(DL_DIR)/$(INETUTILS_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	mv $(BUILD_DIR)/$(INETUTILS_DIR) $(@D)

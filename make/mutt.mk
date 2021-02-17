@@ -30,7 +30,7 @@ MUTT_CONFLICTS=
 #
 # MUTT_IPK_VERSION should be incremented when the ipk changes.
 #
-MUTT_IPK_VERSION=1
+MUTT_IPK_VERSION=3
 
 #
 # MUTT_CONFFILES should be a list of user-editable files
@@ -134,7 +134,7 @@ mutt-unpack: $(MUTT_BUILD_DIR)/.configured
 #
 $(MUTT_BUILD_DIR)/.built: $(MUTT_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(@D) makedoc CC=$(HOSTCC) LDFLAGS="" LIBS=""
+	$(MAKE) -C $(@D) makedoc CC=$(HOSTCC) LDFLAGS="" LIBS="" CPPFLAGS="-pipe -O2"
 	$(MAKE) -C $(@D)
 	touch $@
 

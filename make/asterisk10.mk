@@ -81,7 +81,7 @@ ASTERISK10_CONFLICTS=asterisk18,asterisk11
 #
 # ASTERISK10_IPK_VERSION should be incremented when the ipk changes.
 #
-ASTERISK10_IPK_VERSION=2
+ASTERISK10_IPK_VERSION=5
 
 #
 # ASTERISK10_CONFFILES should be a list of user-editable files
@@ -212,8 +212,8 @@ endif
 endif
 
 ASTERISK10_LDFLAGS=
-ifeq ($(OPTWARE_TARGET), $(filter angstrombe angstromle cs05q3armel cs08q1armel syno-e500, $(OPTWARE_TARGET)))
-ASTERISK10_LDFLAGS+=-lpthread -ldl -lresolv
+ifeq ($(OPTWARE_TARGET), $(filter ct-ng-ppc-e500v2, $(OPTWARE_TARGET)))
+ASTERISK10_LDFLAGS+=-pthread -ldl -lresolv
 endif
 ifeq (uclibc, $(LIBC_STYLE))
 ASTERISK10_LDFLAGS+=-lpthread -lm
@@ -326,8 +326,8 @@ endif
 ifeq (, $(filter -pipe, $(TARGET_CUSTOM_FLAGS)))
 	sed -i -e '/+= *-pipe/s/^/#/' $(@D)/Makefile
 endif
-ifeq ($(OPTWARE_TARGET), $(filter buildroot-armeabi buildroot-armeabi-ng buildroot-armv5eabi-ng buildroot-mipsel buildroot-mipsel-ng, $(OPTWARE_TARGET)))
-#	no res_nsearch() in uClibc 0.9.33.2
+ifeq ($(OPTWARE_TARGET), $(filter buildroot-armeabi buildroot-armeabi-ng buildroot-armv5eabi-ng buildroot-armv5eabi-ng-legacy buildroot-mipsel buildroot-mipsel-ng, $(OPTWARE_TARGET)))
+#	no res_nsearch() in uClibc
 	sed -i -e '/AC_DEFINE(\[HAVE_RES_NINIT\]/d' $(@D)/configure.ac
 endif
 	sed -i -e "s/AC_CHECK_HEADERS..xlocale\.h../###########/" $(@D)/configure.ac
@@ -387,15 +387,15 @@ asterisk10-unpack: $(ASTERISK10_BUILD_DIR)/.configured
 #
 $(ASTERISK10_BUILD_DIR)/.built: $(ASTERISK10_BUILD_DIR)/.configured
 	rm -f $@
-	ASTCFLAGS="$(ASTERISK10_CPPFLAGS)" \
+	ASTCFLAGS="$(TARGET_CUSTOM_FLAGS) $(ASTERISK10_CPPFLAGS)" \
 	ASTLDFLAGS="$(STAGING_LDFLAGS) $(ASTERISK10_LDFLAGS)" \
 	$(MAKE) -C $(@D) menuselect.makeopts
 	( cd $(ASTERISK10_BUILD_DIR);\
 	./menuselect/menuselect --enable-category MENUSELECT_ADDONS menuselect.makeopts;\
 	./menuselect/menuselect --disable format_mp3 menuselect.makeopts )
-	ASTCFLAGS="$(ASTERISK10_CPPFLAGS)" \
+	ASTCFLAGS="$(TARGET_CUSTOM_FLAGS) $(ASTERISK10_CPPFLAGS)" \
 	ASTLDFLAGS="$(STAGING_LDFLAGS) $(ASTERISK10_LDFLAGS)" \
-	$(MAKE) -C $(@D)
+	$(MAKE) -C $(@D) $(strip $(if $(filter ct-ng-ppc-e500v2, $(OPTWARE_TARGET)), OPTIMIZE=-O2))
 	touch $@
 
 #
@@ -408,9 +408,9 @@ asterisk10: $(ASTERISK10_BUILD_DIR)/.built
 #
 $(ASTERISK10_BUILD_DIR)/.staged: $(ASTERISK10_BUILD_DIR)/.built
 	rm -f $(ASTERISK10_BUILD_DIR)/.staged
-	ASTCFLAGS="$(ASTERISK10_CPPFLAGS)" \
+	ASTCFLAGS="$(TARGET_CUSTOM_FLAGS) $(ASTERISK10_CPPFLAGS)" \
 	ASTLDFLAGS="$(STAGING_LDFLAGS) $(ASTERISK10_LDFLAGS)" \
-	$(MAKE) -C $(ASTERISK10_BUILD_DIR) DESTDIR=$(STAGING_DIR) ASTSBINDIR=$(TARGET_PREFIX)/sbin install
+	$(MAKE) -C $(ASTERISK10_BUILD_DIR) DESTDIR=$(STAGING_DIR) ASTSBINDIR=$(TARGET_PREFIX)/sbin install -j1
 	touch $(ASTERISK10_BUILD_DIR)/.staged
 
 asterisk10-stage: $(ASTERISK10_BUILD_DIR)/.staged
@@ -448,10 +448,10 @@ $(ASTERISK10_IPK_DIR)/CONTROL/control:
 #
 $(ASTERISK10_IPK): $(ASTERISK10_BUILD_DIR)/.built
 	rm -rf $(ASTERISK10_IPK_DIR) $(BUILD_DIR)/asterisk10_*_$(TARGET_ARCH).ipk
-	ASTCFLAGS="$(ASTERISK10_CPPFLAGS)" \
+	ASTCFLAGS="$(TARGET_CUSTOM_FLAGS) $(ASTERISK10_CPPFLAGS)" \
 	ASTLDFLAGS="$(STAGING_LDFLAGS) $(ASTERISK10_LDFLAGS)" \
-	$(MAKE) -C $(ASTERISK10_BUILD_DIR) DESTDIR=$(ASTERISK10_IPK_DIR) ASTSBINDIR=$(TARGET_PREFIX)/sbin install
-	ASTCFLAGS="$(ASTERISK10_CPPFLAGS)" \
+	$(MAKE) -C $(ASTERISK10_BUILD_DIR) DESTDIR=$(ASTERISK10_IPK_DIR) ASTSBINDIR=$(TARGET_PREFIX)/sbin install -j1
+	ASTCFLAGS="$(TARGET_CUSTOM_FLAGS) $(ASTERISK10_CPPFLAGS)" \
 	ASTLDFLAGS="$(STAGING_LDFLAGS) $(ASTERISK10_LDFLAGS)" \
 	$(MAKE) -C $(ASTERISK10_BUILD_DIR) DESTDIR=$(ASTERISK10_IPK_DIR) samples
 

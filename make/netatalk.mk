@@ -29,8 +29,11 @@ NETATALK_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 NETATALK_DESCRIPTION=Apple talk networking daemon.
 NETATALK_SECTION=networking
 NETATALK_PRIORITY=optional
-NETATALK_DEPENDS=libdb
-NETATALK_SUGGESTS=libgcrypt
+NETATALK_DEPENDS=libdb, libgcrypt, openssl, libacl
+ifeq (uclibc, $(LIBC_STYLE))
+NETATALK_DEPENDS +=, librpc-uclibc
+endif
+NETATALK_SUGGESTS=
 NETATALK_CONFLICTS=
 
 #
@@ -41,7 +44,7 @@ NETATALK_CONFLICTS=
 #
 # NETATALK_IPK_VERSION should be incremented when the ipk changes.
 #
-NETATALK_IPK_VERSION=3
+NETATALK_IPK_VERSION=6
 
 #
 # NETATALK_CONFFILES should be a list of user-editable files
@@ -66,6 +69,10 @@ NETATALK_CONFIG_ARGS ?=
 #NETATALK_LDFLAGS += 
 ifeq ($(OPTWARE_TARGET), $(filter cs05q3armel, $(OPTWARE_TARGET)))
 NETATALK_LDFLAGS += -L$(TARGET_USRLIBDIR)
+endif
+ifeq (uclibc, $(LIBC_STYLE))
+NETATALK_CPPFLAGS += -I$(STAGING_INCLUDE_DIR)/rpc-uclibc
+NETATALK_LDFLAGS += -lrpc-uclibc
 endif
 
 #
@@ -118,7 +125,10 @@ netatalk-source: $(DL_DIR)/$(NETATALK_SOURCE) $(NETATALK_PATCHES)
 # shown below to make various patches to it.
 #
 $(NETATALK_BUILD_DIR)/.configured: $(DL_DIR)/$(NETATALK_SOURCE) $(NETATALK_PATCHES) make/netatalk.mk
-	$(MAKE) libdb-stage libgcrypt-stage libtool-stage
+	$(MAKE) libdb-stage libgcrypt-stage libtool-stage openssl-stage libacl-stage
+ifeq (uclibc, $(LIBC_STYLE))
+	$(MAKE) librpc-uclibc-stage
+endif
 	rm -rf $(BUILD_DIR)/$(NETATALK_DIR) $(@D)
 	$(NETATALK_UNZIP) $(DL_DIR)/$(NETATALK_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(NETATALK_PATCHES)" ; \

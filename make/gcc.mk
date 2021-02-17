@@ -34,24 +34,21 @@ endif
 GCC_SITE?=http://ftp.gnu.org/gnu/gcc/gcc-$(GCC_VERSION)
 GCC_SOURCE?=gcc-$(GCC_VERSION).tar.bz2
 GCC_DIR?=gcc-$(GCC_VERSION)
-GCC_UNZIP=bzcat
+GCC_UNZIP?=bzcat
 GCC_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
-GCC_DESCRIPTION=The GNU Compiler Collection.
+GCC_DESCRIPTION=The GNU Compiler Collection. C and C++ compilers are included in the package.
+GCCGO_DESCRIPTION=GNU Go Compiler.
 GCC_SECTION=base
 GCC_PRIORITY=optional
-GCC_DEPENDS=binutils, libc-dev
+GCC_DEPENDS=binutils, libc-dev, libgmp, libmpfr, libmpc
+ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
+GCC_DEPENDS+=, libiconv
+endif
+GCCGO_DEPENDS=gcc, libgo
 GCC_SUGGESTS=
 GCC_CONFLICTS=
-
-ifeq ($(shell test -x $(TARGET_CC); echo $$?),0)
-ifeq ($(shell test $(shell echo $(GCC_VERSION) | cut -d '.' -f 1) -gt 3; echo $$?),0)
-ifeq ($(shell test $(shell echo $(GCC_VERSION) | cut -d '.' -f 2) -gt 2 || \
-		test $(shell echo $(GCC_VERSION) | cut -d '.' -f 1) -gt 4; echo $$?),0)
-### starting from gcc-4.3 gcc depends on libgmp, libmpfr and libmpc
-GCC_DEPENDS+=, libgmp, libmpfr, libmpc
-endif
-endif
-endif
+GCCGO_SUGGESTS=
+GCCGO_CONFLICTS=
 
 ifdef NATIVE_GCC_ADDITIONAL_DEPS
 GCC_DEPENDS+=, $(NATIVE_GCC_ADDITIONAL_DEPS)
@@ -60,7 +57,12 @@ endif
 #
 # GCC_IPK_VERSION should be incremented when the ipk changes.
 #
-GCC_IPK_VERSION ?= 5
+GCC_IPK_VERSION ?= 7
+
+GCC_HOST_VERSION=7.2.0
+GCC_HOST_SOURCE=gcc-$(GCC_HOST_VERSION).tar.xz
+GCC_HOST_DIR=gcc-$(GCC_HOST_VERSION)
+GCC_HOST_UNZIP=xzcat
 
 #
 # GCC_CONFFILES should be a list of user-editable files
@@ -78,6 +80,11 @@ GCC_PATCHES += $(NATIVE_GCC_EXTRA_PATCHES)
   endif
 endif
 
+GCC_HOST_PATCHES=$(wildcard $(GCC_SOURCE_DIR)/host/*.patch)
+
+GCC_LINKER ?= $(TARGET_LDFLAGS)
+GCC_NATIVE_CFLAGS ?= $(TARGET_CUSTOM_FLAGS)
+
 GCC_BUILD_EXTRA_ENV ?=
 
 GCC_EXTRA_CONF_ENV ?=
@@ -92,9 +99,11 @@ GCC_LDFLAGS=
 GCC_IPK_DIR=$(BUILD_DIR)/gcc-$(GCC_VERSION)-ipk
 GCC_IPK=$(BUILD_DIR)/gcc_$(GCC_VERSION)-$(GCC_IPK_VERSION)_$(TARGET_ARCH).ipk
 
+GCCGO_IPK_DIR=$(BUILD_DIR)/gccgo-$(GCC_VERSION)-ipk
+GCCGO_IPK=$(BUILD_DIR)/gccgo_$(GCC_VERSION)-$(GCC_IPK_VERSION)_$(TARGET_ARCH).ipk
+
 GCC_HOST_BUILD_DIR=$(HOST_BUILD_DIR)/gcc
-GCC_HOST_PROGRAM_SUFFIX:=$(shell echo $(GCC_VERSION) | sed 's/\([^.]*\)[.]*\([^.]*\).*/\1.\2/')
-GCC_HOST_TOOL_SUFFIX:=$(shell echo $(GCC_VERSION) | sed 's/\([^.]*\)[.]*\([^.]*\).*/\1\2/')
+GCC_HOST_BIN_DIR=$(GCC_HOST_BUILD_DIR)/install/bin
 
 GCC_TARGET_NAME ?= $(strip \
 $(if $(and \
@@ -109,8 +118,12 @@ gcc-host gcc-host-stage gcc33-host-tool
 # This is the dependency on the source code.  If the source is missing,
 # then it will be fetched from the site using wget.
 #
-ifeq ($(GCC_DIR), gcc-$(GCC_VERSION))
 $(DL_DIR)/$(GCC_SOURCE):
+	$(WGET) -P $(@D) $(GCC_SITE)/$(@F) || \
+	$(WGET) -P $(@D) $(SOURCES_NLO_SITE)/$(@F)
+
+ifneq ($(GCC_HOST_SOURCE), $(GCC_SOURCE))
+$(DL_DIR)/$(GCC_HOST_SOURCE):
 	$(WGET) -P $(@D) $(GCC_SITE)/$(@F) || \
 	$(WGET) -P $(@D) $(SOURCES_NLO_SITE)/$(@F)
 endif
@@ -123,17 +136,36 @@ endif
 gcc-source: $(DL_DIR)/$(GCC_SOURCE) $(GCC_PATCHES)
 
 
-$(GCC_HOST_BUILD_DIR)/.built: host/.configured $(DL_DIR)/$(GCC_SOURCE) make/gcc.mk
-	rm -rf $(HOST_BUILD_DIR)/$(GCC_DIR) $(@D)
-	$(GCC_UNZIP) $(DL_DIR)/$(GCC_SOURCE) | tar -C $(HOST_BUILD_DIR) -xvf -
-	mv $(HOST_BUILD_DIR)/$(GCC_DIR) $(@D)
+$(GCC_HOST_BUILD_DIR)/.built: host/.configured $(DL_DIR)/$(GCC_HOST_SOURCE) $(GCC_HOST_PATCHES)
+	$(MAKE) libgmp-host-stage libmpfr-host-stage libmpc-host-stage libelf-host-stage
+	rm -rf $(HOST_BUILD_DIR)/$(GCC_HOST_DIR) $(@D)
+	$(GCC_HOST_UNZIP) $(DL_DIR)/$(GCC_HOST_SOURCE) | tar -C $(HOST_BUILD_DIR) -xf -
+	if test -n "$(GCC_HOST_PATCHES)" ; \
+		then cat `echo $(GCC_HOST_PATCHES) | sort` | \
+		$(PATCH) -d $(HOST_BUILD_DIR)/$(GCC_HOST_DIR) -p1 ; \
+	fi
+	mv $(HOST_BUILD_DIR)/$(GCC_HOST_DIR) $(@D)
 	(cd $(@D); \
 		./configure \
-		--prefix=$(HOST_STAGING_PREFIX)	\
-		--program-suffix="-$(GCC_HOST_PROGRAM_SUFFIX)" \
-		--enable-languages=c,c++ \
+		--prefix=$(@D)/install	\
+		--disable-shared \
+		--disable-bootstrap \
+		--disable-libstdcxx-pch \
+		--enable-languages=c,c++,go \
+		--enable-libgomp \
+		--enable-lto \
+		--enable-threads=posix \
+		--enable-tls \
+		--with-gmp=$(HOST_STAGING_PREFIX) \
+		--with-mpfr=$(HOST_STAGING_PREFIX) \
+		--with-mpc=$(HOST_STAGING_PREFIX) \
+		--with-libelf=$(HOST_STAGING_PREFIX) \
+		--with-fpmath=sse \
 	)
 	$(MAKE) -C $(@D)
+	$(MAKE) install -C $(@D)
+	mv -f $(GCC_HOST_BIN_DIR)/gccgo $(GCC_HOST_BIN_DIR)/gccgo.real
+	$(INSTALL) -m 755 $(GCC_SOURCE_DIR)/host/gccgo.wrapper $(GCC_HOST_BIN_DIR)/gccgo
 	touch $@
 
 gcc-host: $(GCC_HOST_BUILD_DIR)/.built
@@ -166,13 +198,9 @@ gcc-host-stage: $(GCC_HOST_BUILD_DIR)/.staged
 # shown below to make various patches to it.
 #
 $(GCC_BUILD_DIR)/.configured: $(DL_DIR)/$(GCC_SOURCE) $(GCC_PATCHES) #make/gcc.mk
-ifeq ($(shell test -x $(TARGET_CC); echo $$?),0)
-ifeq ($(shell test $(shell echo $(GCC_VERSION) | cut -d '.' -f 1) -gt 3; echo $$?),0)
-ifeq ($(shell test $(shell echo $(GCC_VERSION) | cut -d '.' -f 2) -gt 2 || \
-		test $(shell echo $(GCC_VERSION) | cut -d '.' -f 1) -gt 4; echo $$?),0)
 	$(MAKE) libgmp-stage libmpfr-stage libmpc-stage
-endif
-endif
+ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
+	$(MAKE) libiconv-stage
 endif
 ifdef NATIVE_GCC_ADDITIONAL_STAGE
 	$(MAKE) $(NATIVE_GCC_ADDITIONAL_STAGE)
@@ -200,10 +228,11 @@ endif
 		--prefix=$(TARGET_PREFIX) \
 		--disable-nls \
 		--disable-static \
-		--with-as=$(TARGET_AS) \
-		--with-ld=$(TARGET_LD) \
-		--enable-languages=c,c++ \
+		--with-as=$(TARGET_PREFIX)/bin/as \
+		--with-ld=$(TARGET_PREFIX)/bin/ld \
+		--enable-languages=c,c++,go \
 		--disable-multilib \
+		--disable-werror \
 		$(NATIVE_GCC_EXTRA_CONFIG_ARGS) \
 	)
 #	$(PATCH_LIBTOOL) $(@D)/libtool
@@ -257,6 +286,21 @@ $(GCC_IPK_DIR)/CONTROL/control:
 	@echo "Suggests: $(GCC_SUGGESTS)" >>$@
 	@echo "Conflicts: $(GCC_CONFLICTS)" >>$@
 
+$(GCCGO_IPK_DIR)/CONTROL/control:
+	@$(INSTALL) -d $(@D)
+	@rm -f $@
+	@echo "Package: gccgo" >>$@
+	@echo "Architecture: $(TARGET_ARCH)" >>$@
+	@echo "Priority: $(GCC_PRIORITY)" >>$@
+	@echo "Section: $(GCC_SECTION)" >>$@
+	@echo "Version: $(GCC_VERSION)-$(GCC_IPK_VERSION)" >>$@
+	@echo "Maintainer: $(GCC_MAINTAINER)" >>$@
+	@echo "Source: $(GCC_SITE)/$(GCC_SOURCE)" >>$@
+	@echo "Description: $(GCCGO_DESCRIPTION)" >>$@
+	@echo "Depends: $(GCCGO_DEPENDS)" >>$@
+	@echo "Suggests: $(GCCGO_SUGGESTS)" >>$@
+	@echo "Conflicts: $(GCCGO_CONFLICTS)" >>$@
+
 #
 # This builds the IPK file.
 #
@@ -269,31 +313,68 @@ $(GCC_IPK_DIR)/CONTROL/control:
 #
 # You may need to patch your application to make it use these locations.
 #
-$(GCC_IPK): $(GCC_BUILD_DIR)/.built
-	rm -rf $(GCC_IPK_DIR) $(BUILD_DIR)/gcc_*_$(TARGET_ARCH).ipk
+$(GCC_IPK) $(GCCGO_IPK): $(GCC_BUILD_DIR)/.built
+	rm -rf $(GCC_IPK_DIR) $(BUILD_DIR)/gcc_*_$(TARGET_ARCH).ipk \
+		$(GCCGO_IPK_DIR) $(BUILD_DIR)/gccgo_*_$(TARGET_ARCH).ipk
 	PATH=`dirname $(TARGET_CC)`:$(STAGING_DIR)/bin:$(PATH) \
 	$(GCC_BUILD_EXTRA_ENV) \
 		$(MAKE) -C $(GCC_BUILD_DIR) DESTDIR=$(GCC_IPK_DIR) install
-	rm -f $(GCC_IPK_DIR)$(TARGET_PREFIX)/lib/libiberty.a $(GCC_IPK_DIR)$(TARGET_PREFIX)/info/dir $(GCC_IPK_DIR)$(TARGET_PREFIX)/info/dir.old
-	rm -f $(GCC_IPK_DIR)$(TARGET_PREFIX)/lib/libstdc++.so*
-ifeq (wdtv, $(OPTWARE_TARGET))
-	rm -f $(GCC_IPK_DIR)$(TARGET_PREFIX)/lib/lib*.so* $(GCC_IPK_DIR)$(TARGET_PREFIX)/include/*.h
-endif
-ifeq (uclibc-opt, $(filter uclibc-opt, $(PACKAGES)))
-	rm -f $(GCC_IPK_DIR)$(TARGET_PREFIX)/lib/libgcc_s.so*
-endif
-	-cd $(GCC_IPK_DIR)$(TARGET_PREFIX)/libexec/gcc/`$(TARGET_CC) -dumpmachine`/$(GCC_VERSION); \
-		$(STRIP_COMMAND) c* install-tools/fixincl
-	-cd $(GCC_IPK_DIR)$(TARGET_PREFIX)/bin; $(STRIP_COMMAND) cpp gcc g++ gcov
-	rm -f $(GCC_IPK_DIR)$(TARGET_PREFIX)/share/info/dir
-	$(MAKE) $(GCC_IPK_DIR)/CONTROL/control
+	if $(TARGET_CC) -E -P $(SOURCE_DIR)/common/bits.c | grep -q puts.*64-bit; then \
+		cd $(GCC_IPK_DIR)$(TARGET_PREFIX) && \
+		mv -f lib64/* lib/ && \
+		rm -rf lib64; \
+	fi
+	ln -s gcc $(GCC_IPK_DIR)$(TARGET_PREFIX)/bin/cc
+	rm -f $(GCC_IPK_DIR)$(TARGET_PREFIX)/lib/libiberty.a \
+		$(GCC_IPK_DIR)$(TARGET_PREFIX)/share/info/dir \
+		$(GCC_IPK_DIR)$(TARGET_PREFIX)/lib/libstdc++.so* \
+		$(GCC_IPK_DIR)$(TARGET_PREFIX)/lib/libgcc_s.so* \
+		$(GCC_IPK_DIR)$(TARGET_PREFIX)/lib/libgo.so*
+	cd $(GCC_IPK_DIR)$(TARGET_PREFIX)/bin; $(STRIP_COMMAND) cpp c++ gcc g++ gcov gccgo
+	cd $(GCC_IPK_DIR)$(TARGET_PREFIX)/libexec/gcc/$(GCC_TARGET_NAME)/$(GCC_VERSION); \
+		$(STRIP_COMMAND) cc1 cc1plus collect2 go1 install-tools/fixincl
+	###
+	### install gccgo package files
+	###
+	$(INSTALL) -d $(GCCGO_IPK_DIR)$(TARGET_PREFIX)/bin $(GCCGO_IPK_DIR)$(TARGET_PREFIX)/lib \
+		$(GCCGO_IPK_DIR)$(TARGET_PREFIX)/share/man/man1 \
+		$(GCCGO_IPK_DIR)$(TARGET_PREFIX)/share/info \
+		$(GCCGO_IPK_DIR)$(TARGET_PREFIX)/libexec/gcc/$(GCC_TARGET_NAME)/$(GCC_VERSION)
+	cd $(GCC_IPK_DIR)$(TARGET_PREFIX)/bin; mv -f $(GCC_TARGET_NAME)-gccgo gccgo \
+		$(GCCGO_IPK_DIR)$(TARGET_PREFIX)/bin && \
+		mv -f go $(GCCGO_IPK_DIR)$(TARGET_PREFIX)/bin/gccgo-go && \
+		mv -f gofmt $(GCCGO_IPK_DIR)$(TARGET_PREFIX)/bin/gccgo-gofmt
+	cd $(GCC_IPK_DIR)$(TARGET_PREFIX)/lib; mv -f go libgo.la libgobegin.a libgolibbegin.a \
+		$(GCCGO_IPK_DIR)$(TARGET_PREFIX)/lib
+	cd $(GCC_IPK_DIR)$(TARGET_PREFIX)/share/man/man1; mv -f gccgo.1 go.1 gofmt.1 \
+		$(GCCGO_IPK_DIR)$(TARGET_PREFIX)/share/man/man1
+	cd $(GCC_IPK_DIR)$(TARGET_PREFIX)/share/info; mv -f gccgo.info \
+		$(GCCGO_IPK_DIR)$(TARGET_PREFIX)/share/info
+	cd $(GCC_IPK_DIR)$(TARGET_PREFIX)/libexec/gcc/$(GCC_TARGET_NAME)/$(GCC_VERSION); \
+		mv -f cgo go1 \
+		$(GCCGO_IPK_DIR)$(TARGET_PREFIX)/libexec/gcc/$(GCC_TARGET_NAME)/$(GCC_VERSION)
+	$(MAKE) $(GCCGO_IPK_DIR)/CONTROL/control $(GCC_IPK_DIR)/CONTROL/control
+	( \
+		echo "update-alternatives --install $(TARGET_PREFIX)/bin/go go $(TARGET_PREFIX)/bin/gccgo-go 80"; \
+		echo "update-alternatives --install $(TARGET_PREFIX)/bin/gofmt gofmt $(TARGET_PREFIX)/bin/gccgo-gofmt 80"; \
+	) > $(GCCGO_IPK_DIR)/CONTROL/postinst
+	( \
+		echo "update-alternatives --remove go $(TARGET_PREFIX)/bin/gccgo-go"; \
+		echo "update-alternatives --remove gofmt $(TARGET_PREFIX)/bin/gccgo-gofmt"; \
+	) > $(GCCGO_IPK_DIR)/CONTROL/prerm
+	if test -n "$(UPD-ALT_PREFIX)"; then \
+		sed -i -e '/^[ 	]*update-alternatives /s|update-alternatives|$(UPD-ALT_PREFIX)/bin/&|' \
+			$(GCCGO_IPK_DIR)/CONTROL/postinst $(GCCGO_IPK_DIR)/CONTROL/prerm; \
+	fi
 	echo $(GCC_CONFFILES) | sed -e 's/ /\n/g' > $(GCC_IPK_DIR)/CONTROL/conffiles
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(GCC_IPK_DIR)
+	cd $(BUILD_DIR); $(IPKG_BUILD) $(GCCGO_IPK_DIR)
+	$(WHAT_TO_DO_WITH_IPK_DIR) $(GCC_IPK_DIR) $(GCCGO_IPK_DIR)
 
 #
 # This is called from the top level makefile to create the IPK file.
 #
-gcc-ipk: $(GCC_IPK)
+gcc-ipk: $(GCC_IPK) $(GCCGO_IPK)
 
 #
 # This is called from the top level makefile to clean all of the built files.
@@ -307,10 +388,12 @@ gcc-clean:
 # directories.
 #
 gcc-dirclean:
-	rm -rf $(BUILD_DIR)/$(GCC_DIR) $(GCC_BUILD_DIR) $(GCC_IPK_DIR) $(GCC_IPK)
+	rm -rf $(BUILD_DIR)/$(GCC_DIR) $(GCC_BUILD_DIR) \
+		$(GCC_IPK_DIR) $(GCC_IPK) \
+		$(GCCGO_IPK_DIR) $(GCCGO_IPK)
 #
 #
 # Some sanity check for the package.
 #
-gcc-check: $(GCC_IPK)
-	perl scripts/optware-check-package.pl --target=$(OPTWARE_TARGET) $(GCC_IPK)
+gcc-check: $(GCC_IPK) $(GCCGO_IPK)
+	perl scripts/optware-check-package.pl --target=$(OPTWARE_TARGET) $^

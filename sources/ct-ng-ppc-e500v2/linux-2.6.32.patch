@@ -1,0 +1,20 @@
+--- a/config/versions/linux.in
++++ b/config/versions/linux.in
+@@ -373,7 +373,7 @@ config LINUX_V_2_6_33
+     depends on !LINUX_REQUIRE_3_2_or_later
+ 
+ config LINUX_V_2_6_32
+-    bool "2.6.32.27"
++    bool "2.6.32"
+     select LINUX_3_2_or_older
+     depends on !LINUX_REQUIRE_3_2_or_later
+ 
+@@ -429,7 +429,7 @@ config LINUX_VERSION
+     default "2.6.35.9" if LINUX_V_2_6_35
+     default "2.6.34.7" if LINUX_V_2_6_34
+     default "2.6.33.7" if LINUX_V_2_6_33
+-    default "2.6.32.27" if LINUX_V_2_6_32
++    default "2.6.32" if LINUX_V_2_6_32
+     default "unknown"
+ 
+ config LINUX_MIRRORS

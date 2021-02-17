@@ -26,7 +26,7 @@
 # from your name or email address.  If you leave MAINTAINER set to
 # "NSLU2 Linux" other developers will feel free to edit.
 #
-NVI_SITE=ftp://ftp.sleepycat.com/pub
+NVI_SITE=http://pkgs.fedoraproject.org/repo/pkgs/nvi-m17n/$(NVI_SOURCE)/765e2153f5fc4f21793f2edc2647305a
 NVI_VERSION=1.79
 NVI_SOURCE=nvi-$(NVI_VERSION).tar.gz
 NVI_DIR=nvi-$(NVI_VERSION)
@@ -35,14 +35,14 @@ NVI_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 NVI_DESCRIPTION=The original Berkeley Vi.
 NVI_SECTION=editor
 NVI_PRIORITY=optional
-NVI_DEPENDS=
+NVI_DEPENDS=ncurses
 NVI_SUGGESTS=
 NVI_CONFLICTS=
 
 #
 # NVI_IPK_VERSION should be incremented when the ipk changes.
 #
-NVI_IPK_VERSION=2
+NVI_IPK_VERSION=3
 
 #
 # NVI_CONFFILES should be a list of user-editable files

@@ -67,6 +67,12 @@ NET-TOOLS_PATCHES=sources/net-tools/net-tools-1.60-miitool-gcc33-1.patch \
 NET-TOOLS_CPPFLAGS=-D_GNU_SOURCE -O2
 NET-TOOLS_LDFLAGS=
 
+NET-TOOLS_MAKEOPTS=\
+	CC=$(TARGET_CC) \
+	BASEDIR=$(TARGET_PREFIX) \
+	COPTS="$(STAGING_CPPFLAGS) $(NET-TOOLS_CPPFLAGS)" \
+	LOPTS="-L$(NET-TOOLS_BUILD_DIR)/lib $(STAGING_LDFLAGS) $(NET-TOOLS_LDFLAGS)"
+
 #
 # NET-TOOLS_BUILD_DIR is the directory in which the build is done.
 # NET-TOOLS_SOURCE_DIR is the directory which holds all the
@@ -112,12 +118,12 @@ net-tools-source: $(DL_DIR)/$(NET-TOOLS_SOURCE) $(NET-TOOLS_PATCHES)
 # If the compilation of the package requires other packages to be staged
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
-$(NET-TOOLS_BUILD_DIR)/.configured: $(DL_DIR)/$(NET-TOOLS_SOURCE) $(NET-TOOLS_PATCHES)
+$(NET-TOOLS_BUILD_DIR)/.configured: $(DL_DIR)/$(NET-TOOLS_SOURCE) $(NET-TOOLS_PATCHES) make/net-tools.mk
 	#$(MAKE) <bar>-stage <baz>-stage
-	rm -rf $(BUILD_DIR)/$(NET-TOOLS_DIR) $(NET-TOOLS_BUILD_DIR)
+	rm -rf $(BUILD_DIR)/$(NET-TOOLS_DIR) $(@D)
 	$(NET-TOOLS_UNZIP) $(DL_DIR)/$(NET-TOOLS_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	cat $(NET-TOOLS_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(NET-TOOLS_DIR) -p1
-	mv $(BUILD_DIR)/$(NET-TOOLS_DIR) $(NET-TOOLS_BUILD_DIR)
+	mv $(BUILD_DIR)/$(NET-TOOLS_DIR) $(@D)
 	touch $@
 
 net-tools-unpack: $(NET-TOOLS_BUILD_DIR)/.configured
@@ -127,7 +133,9 @@ net-tools-unpack: $(NET-TOOLS_BUILD_DIR)/.configured
 #
 $(NET-TOOLS_BUILD_DIR)/.built: $(NET-TOOLS_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) CC=$(TARGET_CC) BASEDIR=$(TARGET_PREFIX) COPTS="$(STAGING_CPPFLAGS) $(NET-TOOLS_CPPFLAGS)" LOPTS="$(STAGING_LDFLAGS) $(NET-TOOLS_LDFLAGS)" -C $(NET-TOOLS_BUILD_DIR)
+	$(MAKE) $(NET-TOOLS_MAKEOPTS) -C $(@D) version.h
+	$(MAKE) $(NET-TOOLS_MAKEOPTS) -C $(@D)/lib
+	$(MAKE) $(NET-TOOLS_MAKEOPTS) -C $(@D)
 	touch $@
 
 #
@@ -140,7 +148,7 @@ net-tools: $(NET-TOOLS_BUILD_DIR)/.built
 #
 $(NET-TOOLS_BUILD_DIR)/.staged: $(NET-TOOLS_BUILD_DIR)/.built
 	rm -f $@
-#	$(MAKE) -C $(NET-TOOLS_BUILD_DIR) DESTDIR=$(STAGING_DIR) install
+#	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install
 	touch $@
 
 net-tools-stage: $(NET-TOOLS_BUILD_DIR)/.staged
@@ -178,7 +186,7 @@ $(NET-TOOLS_IPK_DIR)/CONTROL/control:
 #
 $(NET-TOOLS_IPK): $(NET-TOOLS_BUILD_DIR)/.built
 	rm -rf $(NET-TOOLS_IPK_DIR) $(BUILD_DIR)/net-tools_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(NET-TOOLS_BUILD_DIR) BASEDIR=$(NET-TOOLS_IPK_DIR)$(TARGET_PREFIX) install
+	$(MAKE) $(NET-TOOLS_MAKEOPTS) BASEDIR=$(NET-TOOLS_IPK_DIR)$(TARGET_PREFIX) -C $(NET-TOOLS_BUILD_DIR) install -j1
 	$(STRIP_COMMAND) $(NET-TOOLS_IPK_DIR)$(TARGET_PREFIX)/bin/*
 	$(STRIP_COMMAND) $(NET-TOOLS_IPK_DIR)$(TARGET_PREFIX)/sbin/*
 	$(INSTALL) -d $(NET-TOOLS_IPK_DIR)$(TARGET_PREFIX)/etc/
@@ -231,4 +239,4 @@ net-tools-dirclean:
 # Some sanity check for the package.
 #
 net-tools-check: $(NET-TOOLS_IPK)
-	perl scripts/optware-check-package.pl --target=$(OPTWARE_TARGET) $(NET-TOOLS_IPK)
+	perl scripts/optware-check-package.pl --target=$(OPTWARE_TARGET) $^

@@ -20,7 +20,7 @@
 # from your name or email address.  If you leave MAINTAINER set to
 # "NSLU2 Linux" other developers will feel free to edit.
 #
-UNCIA_SITE=http://uncia.sourceforge.net
+UNCIA_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/uncia
 UNCIA_VERSION=1.3
 UNCIA_SOURCE=uncia-$(UNCIA_VERSION).tar.gz
 UNCIA_DIR=uncia-$(UNCIA_VERSION)
@@ -30,13 +30,17 @@ UNCIA_DESCRIPTION=a big cat, ASCII text manipulation tool.
 UNCIA_SECTION=utils
 UNCIA_PRIORITY=optional
 UNCIA_DEPENDS=libstdc++, libcurl, zlib, libexplain
+ifneq (libexplain, $(filter libexplain, $(PACKAGES)))
+UNCIA_VERSION=1.2
+UNCIA_DEPENDS=libstdc++, libcurl, zlib
+endif
 UNCIA_SUGGESTS=
 UNCIA_CONFLICTS=
 
 #
 # UNCIA_IPK_VERSION should be incremented when the ipk changes.
 #
-UNCIA_IPK_VERSION=1
+UNCIA_IPK_VERSION=4
 
 #
 # UNCIA_CONFFILES should be a list of user-editable files
@@ -46,7 +50,9 @@ UNCIA_IPK_VERSION=1
 # UNCIA_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-UNCIA_PATCHES=$(UNCIA_SOURCE_DIR)/cstdarg.patch
+UNCIA_PATCHES=\
+$(UNCIA_SOURCE_DIR)/cstdarg.patch \
+$(UNCIA_SOURCE_DIR)/filter_explicit_convert_istream_to_bool.patch \
 
 #
 # If the compilation of the package requires additional
@@ -105,7 +111,10 @@ uncia-source: $(DL_DIR)/$(UNCIA_SOURCE) $(UNCIA_PATCHES)
 # shown below to make various patches to it.
 #
 $(UNCIA_BUILD_DIR)/.configured: $(DL_DIR)/$(UNCIA_SOURCE) $(UNCIA_PATCHES) make/uncia.mk
-	$(MAKE) libstdc++-stage libcurl-stage zlib-stage libexplain-stage libtool-stage
+	$(MAKE) libstdc++-stage libcurl-stage zlib-stage libtool-stage boost-stage
+ifeq (libexplain, $(filter libexplain, $(PACKAGES)))
+	$(MAKE) libexplain-stage
+endif
 	rm -rf $(BUILD_DIR)/$(UNCIA_DIR) $(@D)
 	$(UNCIA_UNZIP) $(DL_DIR)/$(UNCIA_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(UNCIA_PATCHES)" ; \
@@ -139,6 +148,7 @@ uncia-unpack: $(UNCIA_BUILD_DIR)/.configured
 #
 $(UNCIA_BUILD_DIR)/.built: $(UNCIA_BUILD_DIR)/.configured
 	rm -f $@
+	$(MAKE) -C $(@D) uncia/gram.yacc.cc
 	$(MAKE) -C $(@D)
 	touch $@
 
@@ -152,7 +162,7 @@ uncia: $(UNCIA_BUILD_DIR)/.built
 #
 $(UNCIA_BUILD_DIR)/.staged: $(UNCIA_BUILD_DIR)/.built
 	rm -f $@
-	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install
+	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install -j1
 	touch $@
 
 uncia-stage: $(UNCIA_BUILD_DIR)/.staged
@@ -190,8 +200,9 @@ $(UNCIA_IPK_DIR)/CONTROL/control:
 #
 $(UNCIA_IPK): $(UNCIA_BUILD_DIR)/.built
 	rm -rf $(UNCIA_IPK_DIR) $(BUILD_DIR)/uncia_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(UNCIA_BUILD_DIR) DESTDIR=$(UNCIA_IPK_DIR) install
-	$(STRIP_COMMAND) $(UNCIA_IPK_DIR)$(TARGET_PREFIX)/bin/*
+	$(MAKE) -C $(UNCIA_BUILD_DIR) DESTDIR=$(UNCIA_IPK_DIR) install -j1
+	$(STRIP_COMMAND) $(UNCIA_IPK_DIR)$(TARGET_PREFIX)/bin/* \
+		$(UNCIA_IPK_DIR)$(TARGET_PREFIX)/lib/libuncia.so
 	$(MAKE) $(UNCIA_IPK_DIR)/CONTROL/control
 	echo $(UNCIA_CONFFILES) | sed -e 's/ /\n/g' > $(UNCIA_IPK_DIR)/CONTROL/conffiles
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(UNCIA_IPK_DIR)

@@ -1,0 +1,11 @@
+--- a/src/thread/Util.cxx
++++ b/src/thread/Util.cxx
+@@ -38,7 +38,7 @@
+ #include <windows.h>
+ #endif
+ 
+-#ifdef __linux__
++#if defined(__linux__) && defined(__NR_ioprio_set)
+ 
+ static int
+ ioprio_set(int which, int who, int ioprio)

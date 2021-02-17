@@ -30,14 +30,14 @@ VIM_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 VIM_DESCRIPTION=Yet another version of the vi editor.
 VIM_SECTION=util
 VIM_PRIORITY=optional
-VIM_DEPENDS=ncurses
+VIM_DEPENDS=ncurses, libacl, gettext
 VIM_SUGGESTS=
 VIM_CONFLICTS=
 
 #
 # VIM_IPK_VERSION should be incremented when the ipk changes.
 #
-VIM_IPK_VERSION=2
+VIM_IPK_VERSION=6
 
 #
 # VIM_CONFFILES should be a list of user-editable files
@@ -48,7 +48,9 @@ VIM_CONFFILES=
 # VIM_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-VIM_PATCHES=$(VIM_SOURCE_DIR)/configure.patch
+VIM_PATCHES=\
+$(VIM_SOURCE_DIR)/configure.patch \
+$(VIM_SOURCE_DIR)/xxd_ldflags.patch \
 
 #
 # If the compilation of the package requires additional
@@ -116,7 +118,7 @@ vim-source: $(DL_DIR)/$(VIM_SOURCE) $(VIM_PATCHES)
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
 $(VIM_BUILD_DIR)/.configured: $(DL_DIR)/$(VIM_SOURCE) $(VIM_PATCHES) make/vim.mk
-	$(MAKE) ncurses-stage
+	$(MAKE) ncurses-stage libacl-stage gettext-stage
 	rm -rf $(BUILD_DIR)/$(VIM_DIR) $(@D)
 	$(VIM_UNZIP) $(DL_DIR)/$(VIM_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(VIM_PATCHES)"; then \

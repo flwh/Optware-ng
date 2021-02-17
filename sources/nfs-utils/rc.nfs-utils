@@ -1,28 +1,85 @@
 #!/bin/sh
 
-if [ -n "`%OPTWARE_TARGET_PREFIX%/bin/pidof statd`" ]; then 
-    %OPTWARE_TARGET_PREFIX%/bin/killall statd 2>/dev/null
-fi
+PORT=2049
+PROCESSES=1
 
-if [ -n "`%OPTWARE_TARGET_PREFIX%/bin/pidof nfsd`" ]; then 
-    %OPTWARE_TARGET_PREFIX%/bin/killall nfsd 2>/dev/null
-fi
+statd_args="--no-notify"
+nfsd_args="-p $PORT $PROCESSES"
+mountd_args=""
 
-if [ -n "`%OPTWARE_TARGET_PREFIX%/bin/pidof mountd`" ]; then 
-    %OPTWARE_TARGET_PREFIX%/bin/killall mountd 2>/dev/null
-fi
+case "$1" in
+  start)
+        for NAME in statd nfsd mountd; do
+            if [ "$NAME" = "nfsd" ]; then
+              PROGNAME="nfsd"
+            else
+              PROGNAME="rpc.$NAME"
+            fi
+            if [ -n "`%OPTWARE_TARGET_PREFIX%/bin/busybox pidof $PROGNAME`" ]; then
+                echo "rpc.$NAME is already running"
+                continue
+            fi
+            echo -n "Starting $PROGNAME: "
+              case "$NAME" in
+                statd)
+                  %OPTWARE_TARGET_PREFIX%/sbin/rpc.$NAME $statd_args
+                  ;;
+                nfsd)
+                  %OPTWARE_TARGET_PREFIX%/sbin/rpc.$NAME $nfsd_args
+                  ;;
+                mountd)
+                  %OPTWARE_TARGET_PREFIX%/sbin/rpc.$NAME $mountd_args
+                  ;;
+                *)
+                  :
+              esac
+            echo "Done"
+        done
 
-if [ ! -d /var/lib/nfs ] ;  then
-    mkdir -p /var/lib/nfs
-fi
+        echo -n "Exporting NFS Filesystems: "
+        %OPTWARE_TARGET_PREFIX%/sbin/exportfs -ra 2>&1 > /dev/null
+        echo "Done"
+        exit 0
+        ;;
+  stop)
+        for NAME in mountd nfsd statd; do
+            if [ "$NAME" = "nfsd" ]; then
+              PROGNAME="nfsd"
+            else
+              PROGNAME="rpc.$NAME"
+            fi
+            if [ -z "`%OPTWARE_TARGET_PREFIX%/bin/busybox pidof $PROGNAME`" ]; then
+                echo "$PROGNAME is not running"
+                continue
+            fi
+            echo -n "Stopping $PROGNAME: "
+            %OPTWARE_TARGET_PREFIX%/bin/busybox killall -9 $PROGNAME
+            echo "Done"
+        done
+        exit 0
+        ;;
+  restart)
+        $0 stop
+        %OPTWARE_TARGET_PREFIX%/bin/busybox sleep 3
+        $0 start
+        ;;
+  check)
+        for NAME in statd nfsd mountd; do
+            if [ "$NAME" = "nfsd" ]; then
+              PROGNAME="nfsd"
+            else
+              PROGNAME="rpc.$NAME"
+            fi
+            if [ -n "`%OPTWARE_TARGET_PREFIX%/bin/busybox pidof $PROGNAME`" ]; then
+                echo "$PROGNAME is running"
+            else
+                echo "$PROGNAME is not running"
+            fi
+        done
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|restart|check}"
+        exit 1
+esac
 
-/bin/rm -f /etc/exports
-/bin/ln -s %OPTWARE_TARGET_PREFIX%/etc/exports /etc/exports
-
-touch /var/lib/nfs/etab
-touch /var/lib/nfs/rmtab
-
-%OPTWARE_TARGET_PREFIX%/sbin/statd
-%OPTWARE_TARGET_PREFIX%/sbin/exportfs -r
-%OPTWARE_TARGET_PREFIX%/sbin/nfsd
-%OPTWARE_TARGET_PREFIX%/sbin/mountd
+exit 0

@@ -10,8 +10,8 @@
 # questions. But feel free to update or change this package
 # if there are reasons.
 #
-GPHOTO2_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/gphoto
-GPHOTO2_VERSION=2.5.8
+GPHOTO2_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/project/gphoto/gphoto/$(GPHOTO2_VERSION)
+GPHOTO2_VERSION=2.5.15
 GPHOTO2_SOURCE=gphoto2-$(GPHOTO2_VERSION).tar.bz2
 GPHOTO2_DIR=gphoto2-$(GPHOTO2_VERSION)
 GPHOTO2_UNZIP=bzcat

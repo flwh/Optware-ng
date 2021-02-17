@@ -55,9 +55,9 @@ OPENSIPS_CONFLICTS=
 # OPENSIPS_IPK_VERSION should be incremented when the ipk changes.
 #
 ifeq ($(OPENSIPS_SOURCE_TYPE), tarball)
-OPENSIPS_IPK_VERSION=1
+OPENSIPS_IPK_VERSION=4
 else
-OPENSIPS_IPK_VERSION=1
+OPENSIPS_IPK_VERSION=4
 endif
 
 #
@@ -84,7 +84,7 @@ OPENSIPS_MAKEFLAGS=$(strip \
         $(if $(filter slugosbe, $(OPTWARE_TARGET)), ARCH=arm OS=linux OSREL=2.6.16, \
         $(if $(filter mipsel, $(TARGET_ARCH)), ARCH=mips OS=linux OSREL=2.4.20, \
         $(if $(filter i386 i686, $(TARGET_ARCH)), ARCH=i386 OS=linux, \
-        ARCH=arm OS=linux OSREL=2.4.22))))))
+        ARCH=$(TARGET_ARCH) OS=linux))))))
 
 #
 # Excluded modules:
@@ -284,7 +284,7 @@ $(OPENSIPS_IPK): $(OPENSIPS_BUILD_DIR)/.built
 	LD_EXTRA_OPTS="$(STAGING_LDFLAGS)" \
 	CROSS_COMPILE="$(TARGET_CROSS)" \
 	TLS=1 LOCALBASE=$(STAGING_PREFIX) SYSBASE=$(STAGING_PREFIX) CC="$(TARGET_CC)" \
-	$(MAKE) -C $(OPENSIPS_BUILD_DIR) $(OPENSIPS_MAKEFLAGS) DESTDIR=$(OPENSIPS_IPK_DIR) \
+	$(MAKE) -C $(OPENSIPS_BUILD_DIR) -j1 $(OPENSIPS_MAKEFLAGS) DESTDIR=$(OPENSIPS_IPK_DIR) \
 	prefix=$(OPENSIPS_IPK_DIR)$(TARGET_PREFIX) cfg-prefix=$(OPENSIPS_IPK_DIR)$(TARGET_PREFIX) $(OPENSIPS_DEBUG_MODE) \
 	include_modules="$(OPENSIPS_INCLUDE_MODULES)" exclude_modules="$(OPENSIPS_EXCLUDE_MODULES)" install
 

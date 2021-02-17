@@ -10,8 +10,8 @@
 # questions. But feel free to update or change this package
 # if there are reasons.
 #
-LIBGPHOTO2_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/gphoto
-LIBGPHOTO2_VERSION=2.5.8
+LIBGPHOTO2_SITE=https://$(SOURCEFORGE_MIRROR)/sourceforge/project/gphoto/libgphoto/$(LIBGPHOTO2_VERSION)
+LIBGPHOTO2_VERSION=2.5.16
 LIBGPHOTO2_SOURCE=libgphoto2-$(LIBGPHOTO2_VERSION).tar.bz2
 LIBGPHOTO2_DIR=libgphoto2-$(LIBGPHOTO2_VERSION)
 LIBGPHOTO2_UNZIP=bzcat
@@ -36,7 +36,7 @@ LIBGPHOTO2_IPK_VERSION=1
 # LIBGPHOTO2_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-LIBGPHOTO2_PATCHES=
+LIBGPHOTO2_PATCHES=$(LIBGPHOTO2_SOURCE_DIR)/libtool.patch
 #
 # Version 2.3.1
 #

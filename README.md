@@ -1,38 +1,79 @@
 # Description
 
-This is an Optware fork. It targets to be firmware-independent and currently supports hard-float ARMv7, I686 and soft-float ARMv5, ARMv7 EABI and MIPSEL targets.
+This is an Optware fork. It targets to be firmware-independent and currently supports hard-float ARMv7, I686, x86_64, PowerPC 603e and soft-float ARMv5, ARMv7 EABI, MIPSEL and PowerPC e500v2 targets. Feeds building and hosting resources are kindly provided by [Nas-Admin.org project](http://www.nas-admin.org).
+
+# Help wanted
+
+Now that Optware-ng is official, we're looking for developers and wiki writers. If you're willing to give it a go, please see '**Contributing to project and building from source**' and '**Writing Optware-ng end-user instructions**' sections below.
 
 # Attention!
 
-uClibc-0.9.33.2 feeds: ARMv7 (buildroot-armeabi) and MIPSEL (buildroot-mipsel) are now DEPRECATED. These feeds will remain there on the server, but will not be developed further, since uClibc-0.9.33.2 is *very* outdated. New feeds that use uClibc-ng-1.0.6: buildroot-armeabi-ng and buildroot-mipsel-ng should be used instead. If you have previously bootstrapped one of the uClibc-0.9.33.2 feeds using `buildroot-armeabi-bootstrap.sh` or `buildroot-mipsel-bootstrap.sh` scripts, see below for migrating instructions.
+If you are having issues with installing packages, similar to [#106](https://github.com/Optware/Optware-ng/issues/106), you need to upgrade your `ipkg` package manager.
+
+Some changes have been recently made to the packaging system:
+* sha256 checksum added
+* Installed-Size field added to the ipk files and to the index
+* opkg is now used as the package manager. To provide backward compatibility, it's patched to use ipkg pathes
+
+To upgrade the packager, simply run the bootstrap script proper for your target (see the '**Getting started**' section) -- this will not affect your installed packages. After that, just use `ipkg` (or `ipkg-static`) command as you used it before the upgrade.
+
+# Attention!
+
+Optware-ng feeds have moved to [http://ipkg.nslu2-linux.org/optware-ng](http://ipkg.nslu2-linux.org/optware-ng). Please run this command to update ipkg configuration if you installed Optware-ng prior to this announcement:
+
+```
+sed -i -e 's|optware-ng\.zyxmon\.org/|ipkg.nslu2-linux.org/optware-ng/|' /opt/etc/ipkg.conf
+ipkg update
+```
+
+```
+ipkg update
+ipkg -force-reinstall install `ipkg list_installed|cut -d ' ' -f1`
+```
 
 # Getting started
 
-The instructions below only download, unpack and configure the package manager `ipkg`. You must previously make sure that `/opt` is writable, by preparing USB storage or router's `jffs` partition (for routers that support them), or symlink/mount-bind `/opt` to a location on your data volume (e.g., for a NAS). If you have MIPSEL/ARM Asus router running [Asuswrt-Merlin firmware](http://asuswrt.lostrealm.ca/download), check out [How To Install New Generation Optware]( https://www.hqt.ro/how-to-install-new-generation-optware) guide by @TeHashX.
+The instructions below only download, unpack and configure the package manager `ipkg`. You must previously make sure that `/opt` is writable, by preparing USB storage or router's `jffs` partition (for routers that support them), or symlink/mount-bind `/opt` to a location on your data volume (e.g., for a NAS). If you have MIPSEL/ARM Asus router running [Asuswrt-Merlin firmware](http://asuswrt.lostrealm.ca/download), check out [How To Install New Generation Optware](https://www.hqt.ro/how-to-install-new-generation-optware) guide by @TeHashX. If you owe a QNAP box, check out [Qnap Optware-NG](https://forum.qnap.com/viewtopic.php?f=124&t=137710) by @satfreak.
 
 To bootstrap the feed, connect over SSH/Telnet and type:
 
 ARMv7 EABI hardfloat:
 (Use this if you have a modern ARM device with FPU, e.g., a NAS)
 ```
-wget -O - http://optware-ng.zyxmon.org/buildroot-armeabihf/buildroot-armeabihf-bootstrap.sh | sh
+wget -O - http://ipkg.nslu2-linux.org/optware-ng/bootstrap/buildroot-armeabihf-bootstrap.sh | sh
 ```
 ARMv7 EABI softfloat:
 (Use this for a modern ARM device without FPU, e.g., an ARMv7 router)
 ```
-wget -O - http://optware-ng.zyxmon.org/buildroot-armeabi-ng/buildroot-armeabi-ng-bootstrap.sh | sh
+wget -O - http://ipkg.nslu2-linux.org/optware-ng/bootstrap/buildroot-armeabi-ng-bootstrap.sh | sh
 ```
-ARMv5 EABI:
+ARMv5 EABI (use this if running a more recent linux, 2.6.36.4 or newer):
 ```
-wget -O - http://optware-ng.zyxmon.org/buildroot-armv5eabi-ng/buildroot-armv5eabi-ng-bootstrap.sh | sh
+wget -O - http://ipkg.nslu2-linux.org/optware-ng/bootstrap/buildroot-armv5eabi-ng-bootstrap.sh | sh
+```
+ARMv5 EABI legacy (built with 2.6.22 kernel headers, use for devices that run old kernels):
+```
+wget -O - http://ipkg.nslu2-linux.org/optware-ng/bootstrap/buildroot-armv5eabi-ng-legacy-bootstrap.sh | sh
 ```
 MIPSEL:
 ```
-wget -O - http://optware-ng.zyxmon.org/buildroot-mipsel-ng/buildroot-mipsel-ng-bootstrap.sh | sh
+wget -O - http://ipkg.nslu2-linux.org/optware-ng/bootstrap/buildroot-mipsel-ng-bootstrap.sh | sh
+```
+PowerPC 603e:
+```
+wget -O - http://ipkg.nslu2-linux.org/optware-ng/bootstrap/buildroot-ppc-603e-bootstrap.sh | sh
+```
+PowerPC e500v2:
+```
+wget -O - http://ipkg.nslu2-linux.org/optware-ng/bootstrap/ct-ng-ppc-e500v2-bootstrap.sh | sh
 ```
 I686:
 ```
-wget -O - http://optware-ng.zyxmon.org/buildroot-i686/buildroot-i686-bootstrap.sh | sh
+wget -O - http://ipkg.nslu2-linux.org/optware-ng/bootstrap/buildroot-i686-bootstrap.sh | sh
+```
+x86_64:
+```
+wget -O - http://ipkg.nslu2-linux.org/optware-ng/bootstrap/buildroot-x86_64-bootstrap.sh | sh
 ```
 ipkg package manager will be bootstrapped and configured. See available packages:
 ```
@@ -47,21 +88,64 @@ Install desired ones:
 
 # Available packages
 
-* [ARMv7 EABI hardfloat](http://optware-ng.zyxmon.org/buildroot-armeabihf/Packages.html)
-* [ARMv7 EABI softfloat](http://optware-ng.zyxmon.org/buildroot-armeabi-ng/Packages.html)
-* [ARMv5 EABI](http://optware-ng.zyxmon.org/buildroot-armv5eabi-ng/Packages.html)
-* [MIPSEL](http://optware-ng.zyxmon.org/buildroot-mipsel-ng/Packages.html)
-* [I686](http://optware-ng.zyxmon.org/buildroot-i686/Packages.html)
+* [ARMv7 EABI hardfloat](http://ipkg.nslu2-linux.org/optware-ng/buildroot-armeabihf/Packages.html)
+* [ARMv7 EABI softfloat](http://ipkg.nslu2-linux.org/optware-ng/buildroot-armeabi-ng/Packages.html)
+* [ARMv5 EABI](http://ipkg.nslu2-linux.org/optware-ng/buildroot-armv5eabi-ng/Packages.html)
+* [ARMv5 EABI legacy](http://ipkg.nslu2-linux.org/optware-ng/buildroot-armv5eabi-ng-legacy/Packages.html)
+* [MIPSEL](http://ipkg.nslu2-linux.org/optware-ng/buildroot-mipsel-ng/Packages.html)
+* [PowerPC 603e](http://ipkg.nslu2-linux.org/optware-ng/buildroot-ppc-603e/Packages.html)
+* [PowerPC e500v2](http://ipkg.nslu2-linux.org/optware-ng/ct-ng-ppc-e500v2/Packages.html)
+* [I686](http://ipkg.nslu2-linux.org/optware-ng/buildroot-i686/Packages.html)
+* [x86_64](http://ipkg.nslu2-linux.org/optware-ng/buildroot-x86_64/Packages.html)
 
-# Migrating to uClibc-ng feeds from deprecated uClibc ones
+# Contributing to project and building from source
 
-If you're running a deprecated uClibc-0.9.33.2 (ARMv7 softfloat or MIPSEL) feed, you can either start from scratch, or use this script that should work for most of the cases (don't forget to backup `/opt` before you proceed!):
+Contribution is always welcomed. These wiki pages contain useful info to get you started:
 
-```
-wget -O - http://optware-ng.zyxmon.org/scripts/move-to-uclibc-ng.sh | sh
-```
+* [Contributing to Optware-ng](https://github.com/Optware/Optware-ng/wiki/Contributing-to-Optware-ng)
+* [Adding a package to Optware-ng](https://github.com/Optware/Optware-ng/wiki/Adding-a-package-to-Optware-ng)
+
+# Writing Optware-ng end-user instructions
+
+Currently, the project is missing writers who would contribute by creating how-to's for end-users. We can setup a mediawiki with the help of nas-admin.org guys, but we need people to fill it. In case you are willing to contribute by writing how-to's, please contact me on #**optware** IRC channel on irc.freenode.net, nickname **alllexx**. If I'm away, you can PM me, and I'll reach you later.
 
 # News
+
+## 2018-10-07
+
+buildroot-x86_64 feed added
+
+## 2017-12-11
+
+buildroot-ppc-603e feed rebuilt with 2.6.32 kernel headers to support WD My Book Live NASes
+
+## 2016-04-25
+
+ct-ng-ppc-e500v2 feed rebuilt with 2.6.32 kernel headers to support Synology PowerPC e500v2 NASes
+
+## 2016-04-14
+
+New ct-ng-ppc-e500v2 feed is now online. This is a softfloat PowerPC e500v2 gcc-5.3.0, glibc-2.23, linux-3.2.66 feed.
+
+## 2016-04-07
+
+buildroot-armve5eabi-ng-legacy feed is now ARMv5 gcc-5.3.0, uClibc-ng-1.0.13, linux-2.6.22. Proper QNAP TS-109Pro support is not feasible until the custom 2.6.12 kernel source used there are made available.
+
+## 2016-03-17
+
+buildroot-armve5eabi-ng-legacy feed added. This is ARMv5 gcc-5.3.0, uClibc-ng-1.0.12, linux-2.6.12 feed. It targets older ARMv5 devices, like QNAP TS-109Pro.
+
+## 2016-02-23
+
+Optware-ng is now official. Feeds are built and hosted by [Nas-Admin.org project](http://www.nas-admin.org). See http://jenkins.nas-admin.org/view/Optware
+
+## 2016-02-14
+
+buildroot-mipsel-ng feed, rebuilt with 2.6.22.19 kernel headers using kernel from the [wl500g](https://github.com/wl500g/wl500g) project, is now online.
+
+## 2015-11-30
+
+New buildroot-ppc-603e is now online. This is a hardfloat PowerPC 603e gcc-5.2.0, glibc-2.21, linux-3.2.66 feed.
 
 ## 2015-10-26
 
@@ -86,15 +170,3 @@ New buildroot-i686 target added. This is a gcc-4.9.2, glibc-2.20, linux-3.2.66 f
 ## 2015-04-19:
 
 Now buildroot-mipsel target added. It is similar to buildroot-armeabi, but targets mipsel softfloat (mips32r2) devices.
-
-# Background
-
-Being at some point an Optware developer, I learnt a bit about this build system and also grew to like it. At some point of my life, however, I got drown away from Optware. Right until I bought an ARM Asus router and discover that both Asus and Tomato USB Shibby mod (the firmware I use) use mbwe-bluering Optware feed. As it was me years ago who added this target, I knew well enough that it was far from being a good fit to be used with the router. Not to mention uClibc versions mismatch, it uses the old ARM application binary interface (OABI), which on systems without a floating point unit processor (and routers obviously don’t have one) is very slow. On the other hand, software floating point operations using the newer EABI interface are noted to be approximately 10x faster than OABI. Since all new ARM devices, and my router as well, have EABI kernels (though often with OABI support enabled), it makes sense to use EABI rather than OABI for better performance, especially when there is no FPU. However, current official Optware has no uClibc ARM EABI target, so the use of mbwe-bluering feed is understandable.
-
-All this left me wishing to add Optware ARM EABI uClibc target, which would use the same toolchain that Asus (and Shibby) use, but, unfortunately, I was unable to renew my Optware developer’s certificate due to the project being basically stalled, hence I chose to fork. I called the new target “shibby-tomato-arm”, and went on to upgrade and fix packages, and while I was at it, add some more packages (like deluge) I wanted to have in the feed. After building the feed, I realized that due to missing uClibc’s libresolv in the firmware, one needs to use some sort of a hack on the target device to use packages that depend on it. This was when @ryzhovau chimed in and taught me how they made Entware firmware-independent. Thanks to his advice, I learnt how to make a uClibc feed depend only on the architecture, but not use a single firmware’s shared library. That being said, there is now no point to stick to the old buildroot-2012.02 toolchain used to build the firmware, so I chose to build my own toolchain using buildroot-2015.02. I called the feed “buildroot-armeabi”, and it has gcc-4.9.2 and can be used to build newer software (like recent mkvtoolnix or mpd) that needs at least gcc-4.6 (unlike shibby-tomato-arm’s gcc-4.5.3) to have proper C++11 standard support (features like range-based 'for', nullptr etc.)
-
-# Building from source
-
-For instructions on how to build packages using this build system, see:
-
-* [Original Optware instructions](http://www.nslu2-linux.org/wiki/Optware/AddAPackageToOptware)

@@ -38,7 +38,7 @@ PY-PIL_CONFLICTS=
 #
 # PY-PIL_IPK_VERSION should be incremented when the ipk changes.
 #
-PY-PIL_IPK_VERSION=1
+PY-PIL_IPK_VERSION=2
 
 #
 # PY-PIL_CONFFILES should be a list of user-editable files
@@ -165,7 +165,6 @@ $(PY-PIL_BUILD_DIR)/.configured: $(DL_DIR)/$(PY-PIL_SOURCE) $(PY-PIL_PATCHES) ma
 		echo "executable=$(TARGET_PREFIX)/bin/python2.7" \
 	    ) >> setup.cfg; \
 	)
-	sed -i -e 's|freetype/fterrors\.h|freetype2/fterrors.h|' $(@D)/*/_imagingft.c
 	touch $@
 
 py-pil-unpack: $(PY-PIL_BUILD_DIR)/.configured

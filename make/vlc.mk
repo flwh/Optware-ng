@@ -32,7 +32,7 @@ VLC_VERSION=2.1.5
 VLC_UNZIP=xzcat
 VLC_SOURCE_SUFFIX=tar.xz
 endif
-VLC_IPK_VERSION=2
+VLC_IPK_VERSION=6
 VLC_SITE=http://download.videolan.org/pub/videolan/vlc/$(VLC_VERSION)
 VLC_SOURCE=vlc-$(VLC_VERSION).$(VLC_SOURCE_SUFFIX)
 VLC_DIR=vlc-$(VLC_VERSION)
@@ -40,7 +40,7 @@ VLC_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 VLC_DESCRIPTION=VLC is a cross-platform media player and streaming server.
 VLC_SECTION=video
 VLC_PRIORITY=optional
-VLC_DEPENDS=dbus, libidn, gnutls
+VLC_DEPENDS=libstdc++, dbus, libidn, gnutls
 ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
 VLC_DEPENDS+=, libiconv
 endif
@@ -51,6 +51,7 @@ flac, \
 freetype, \
 fribidi, \
 liba52, \
+libass, \
 libdvbpsi, \
 libdvdnav, \
 libdvdread, \
@@ -62,6 +63,7 @@ libmpeg2, \
 libogg, \
 libpng, \
 libshout, \
+libudev, \
 libupnp, \
 libvorbis, \
 libxml2, \
@@ -69,15 +71,20 @@ lua, \
 mkvtoolnix, \
 ncursesw, \
 speex
+ifeq (harfbuzz, $(filter harfbuzz, $(PACKAGES)))
+VLC_SUGGESTS+=, harfbuzz
+endif
 ifeq (avahi, $(filter avahi, $(PACKAGES)))
 VLC_SUGGESTS+=, avahi
 endif
 ifeq (x264, $(filter x264, $(PACKAGES)))
 VLC_SUGGESTS+=, x264
 endif
-ifeq (mesalib, $(filter mesalib, $(PACKAGES)))
-# libwayland-egl
-VLC_SUGGESTS+=, mesalib
+ifeq (wayland, $(filter wayland, $(PACKAGES)))
+  ifeq (mesalib, $(filter mesalib, $(PACKAGES)))
+  # libwayland-egl
+  VLC_SUGGESTS+=, mesalib
+  endif
 endif
 ifeq (xcb, $(filter xcb, $(PACKAGES)))
 VLC_SUGGESTS+=, xcb
@@ -93,14 +100,11 @@ VLC_CONFLICTS=
 # which they should be applied to the source code.
 #
 VLC_PATCHES=\
+$(VLC_SOURCE_DIR)/libupnp-1.8.patch \
 $(VLC_SOURCE_DIR)/vlc_filter.h.patch \
 $(VLC_SOURCE_DIR)/libvlc_media.h.patch
 ifeq ($(LIBC_STYLE), uclibc)
-ifneq ($(UCLIBC_NG), yes)
-VLC_PATCHES += $(VLC_SOURCE_DIR)/uclibc.patch
-else
 VLC_PATCHES += $(VLC_SOURCE_DIR)/uclibc-ng.patch
-endif
 endif
 
 #
@@ -112,7 +116,7 @@ VLC_LDFLAGS=
 
 VLC_CONFIG_OPTS = $(if $(filter avahi, $(PACKAGES)),--enable-bonjour,--disable-bonjour)
 VLC_CONFIG_OPTS += $(if $(filter x264, $(PACKAGES)),--enable-x264,--disable-x264)
-ifeq ($(OPTWARE_TARGET), $(filter syno-e500, $(OPTWARE_TARGET)))
+ifeq ($(OPTWARE_TARGET), $(filter ct-ng-ppc-e500v2, $(OPTWARE_TARGET)))
 VLC_CONFIG_OPTS += --disable-altivec
 endif
 ifeq ($(OPTWARE_TARGET), $(filter dns323 ts101, $(OPTWARE_TARGET)))
@@ -120,11 +124,15 @@ VLC_CONFIG_OPTS += --disable-dvbpsi
 else
 VLC_CONFIG_OPTS += --enable-dvbpsi
 endif
-ifeq (mesalib, $(filter mesalib, $(PACKAGES)))
-# libwayland-egl
-VLC_CONFIG_OPTS += --enable-wayland
+ifeq (wayland, $(filter wayland, $(PACKAGES)))
+  ifeq (mesalib, $(filter mesalib, $(PACKAGES)))
+  # libwayland-egl
+  VLC_CONFIG_OPTS += --enable-wayland
+  else
+  VLC_CONFIG_OPTS += --disable-wayland
+  endif
 else
-VLC_CONFIG_OPTS += --disable-wayland
+  VLC_CONFIG_OPTS += --disable-wayland
 endif
 ifeq (xcb, $(filter xcb, $(PACKAGES)))
 VLC_CONFIG_OPTS += --with-x --enable-xcb
@@ -220,13 +228,19 @@ endif
 	ncurses-stage ncursesw-stage \
 	speex-stage \
 	lua-stage lua-host-stage \
-	libgcrypt-stage mkvtoolnix-stage
+	libgcrypt-stage mkvtoolnix-stage \
+	udev-stage libass-stage
+ifeq (harfbuzz, $(filter harfbuzz, $(PACKAGES)))
+	$(MAKE) harfbuzz-stage
+endif
 ifeq (x264, $(filter x264, $(PACKAGES)))
 	$(MAKE) x264-stage
 endif
-ifeq (mesalib, $(filter mesalib, $(PACKAGES)))
-# libwayland-egl
+ifeq (wayland, $(filter wayland, $(PACKAGES)))
+  ifeq (mesalib, $(filter mesalib, $(PACKAGES)))
+  # libwayland-egl
 	$(MAKE) mesalib-stage
+  endif
 endif
 ifeq (xcb, $(filter xcb, $(PACKAGES)))
 	$(MAKE) xcb-stage

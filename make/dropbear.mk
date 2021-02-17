@@ -7,8 +7,9 @@
 # $Id$
 #
 
+ifndef DROPBEAR_SITE
 DROPBEAR_SITE=http://matt.ucc.asn.au/dropbear/releases
-DROPBEAR_VERSION=2015.68
+DROPBEAR_VERSION=2017.75
 DROPBEAR_SOURCE=dropbear-$(DROPBEAR_VERSION).tar.bz2
 DROPBEAR_DIR=dropbear-$(DROPBEAR_VERSION)
 DROPBEAR_UNZIP=bzcat
@@ -21,7 +22,7 @@ DROPBEAR_SUGGESTS=
 DROPBEAR_CONFLICTS=dropbear-android
 
 
-DROPBEAR_IPK_VERSION=2
+DROPBEAR_IPK_VERSION=1
 
 DROPBEAR_PATCHES=$(DROPBEAR_SOURCE_DIR)/configure.patch \
 		 $(DROPBEAR_SOURCE_DIR)/options.h.patch \
@@ -132,3 +133,4 @@ dropbear-dirclean:
 #
 dropbear-check: $(DROPBEAR_IPK)
 	perl scripts/optware-check-package.pl --target=$(OPTWARE_TARGET) $(DROPBEAR_IPK)
+endif

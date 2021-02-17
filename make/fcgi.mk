@@ -20,7 +20,7 @@ FCGI_CONFLICTS=
 #
 # FCGI_IPK_VERSION should be incremented when the ipk changes.
 #
-FCGI_IPK_VERSION=2
+FCGI_IPK_VERSION=3
 
 #
 # If the compilation of the package requires additional
@@ -85,6 +85,8 @@ fcgi-unpack: $(FCGI_BUILD_DIR)/.configured
 #
 $(FCGI_BUILD_DIR)/.built: $(FCGI_BUILD_DIR)/.configured
 	rm -f $@
+	$(MAKE) -C $(@D)/libfcgi libfcgi.la
+	$(MAKE) -C $(@D)/libfcgi libfcgi++.la
 	$(MAKE) -C $(@D)
 	touch $@
 

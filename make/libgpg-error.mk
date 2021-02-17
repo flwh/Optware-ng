@@ -42,7 +42,7 @@ LIBGPG-ERROR_CONFLICTS=
 #
 # LIBGPG-ERROR_IPK_VERSION should be incremented when the ipk changes.
 #
-LIBGPG-ERROR_IPK_VERSION?=1
+LIBGPG-ERROR_IPK_VERSION?=2
 
 #
 # LIBGPG-ERROR_CONFFILES should be a list of user-editable files
@@ -57,7 +57,7 @@ LIBGPG-ERROR_PATCHES=#$(LIBGPG-ERROR_SOURCE_DIR)/configure.patch
 LIBGPG-ERROR_ARCH = $(strip \
     $(if $(filter buildroot-armeabihf, $(OPTWARE_TARGET)), arm-unknown-linux-gnueabihf, \
     $(if $(filter arm, $(TARGET_ARCH)), arm-unknown-linux-gnueabi, \
-    $(if $(filter i686, $(TARGET_ARCH)), i686-pc-linux-gnu, \
+    $(if $(filter i686 x86_64, $(TARGET_ARCH)), $(TARGET_ARCH)-pc-linux-gnu, \
     $(TARGET_ARCH)-unknown-linux-gnu))))
 
 #
@@ -119,9 +119,15 @@ $(LIBGPG-ERROR_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBGPG-ERROR_SOURCE) $(LIBGPG
 	$(LIBGPG-ERROR_UNZIP) $(DL_DIR)/$(LIBGPG-ERROR_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	#cat $(LIBGPG-ERROR_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(LIBGPG-ERROR_DIR) -p1
 	mv $(BUILD_DIR)/$(LIBGPG-ERROR_DIR) $(@D)
+ifeq (, $(filter ct-ng-ppc-e500v2, $(OPTWARE_TARGET)))
 	if [ -f $(@D)/src/syscfg/lock-obj-pub.$(LIBGPG-ERROR_ARCH).h ]; then \
 		ln -s lock-obj-pub.$(LIBGPG-ERROR_ARCH).h $(@D)/src/syscfg/lock-obj-pub.linux-gnu.h; \
 	fi
+else
+	if [ -f $(@D)/src/syscfg/lock-obj-pub.$(LIBGPG-ERROR_ARCH).h ]; then \
+		ln -s lock-obj-pub.$(LIBGPG-ERROR_ARCH).h $(@D)/src/syscfg/lock-obj-pub.linux-gnuspe.h; \
+	fi
+endif
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(LIBGPG-ERROR_CPPFLAGS)" \
@@ -198,6 +204,7 @@ $(LIBGPG-ERROR_IPK_DIR)/CONTROL/control:
 $(LIBGPG-ERROR_IPK): $(LIBGPG-ERROR_BUILD_DIR)/.built
 	rm -rf $(LIBGPG-ERROR_IPK_DIR) $(BUILD_DIR)/libgpg-error_*_$(TARGET_ARCH).ipk
 	$(MAKE) -C $(LIBGPG-ERROR_BUILD_DIR) DESTDIR=$(LIBGPG-ERROR_IPK_DIR) install-strip
+	rm -f $(LIBPG-ERROR_IPK_DIR)$(TARGET_PREFIX)/share/info/dir
 	#$(INSTALL) -d $(LIBGPG-ERROR_IPK_DIR)$(TARGET_PREFIX)/etc/
 	#$(INSTALL) -m 644 $(LIBGPG-ERROR_SOURCE_DIR)/libgpg-error.conf $(LIBGPG-ERROR_IPK_DIR)$(TARGET_PREFIX)/etc/libgpg-error.conf
 	#$(INSTALL) -d $(LIBGPG-ERROR_IPK_DIR)$(TARGET_PREFIX)/etc/init.d

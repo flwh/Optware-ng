@@ -5,27 +5,33 @@
 ###########################################################
 
 MC_SITE=http://www.midnight-commander.org/downloads
-MC_VERSION=4.8.13
-MC_SOURCE=mc-$(MC_VERSION).tar.bz2
+MC_VERSION=4.8.17
+MC_SOURCE=mc-$(MC_VERSION).tar.xz
 MC_DIR=mc-$(MC_VERSION)
-MC_UNZIP=bzcat
+MC_UNZIP=xzcat
 MC_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 MC_DESCRIPTION=Midnight Commander File Manager
 MC_SECTION=utilities
 MC_PRIORITY=optional
-MC_DEPENDS=glib, slang, e2fslibs
+MC_DEPENDS=glib, slang, e2fslibs, gettext
 MC_CONFLICTS=
 
 #
 # MC_IPK_VERSION should be incremented when the ipk changes.
 #
-MC_IPK_VERSION=1
+MC_IPK_VERSION=4
 
 #
 # MC_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-#MC_PATCHES=$(MC_SOURCE_DIR)/src-man2hlp.c.patch
+MC_PATCHES=\
+$(MC_SOURCE_DIR)/subshell.patch \
+$(MC_SOURCE_DIR)/force-xterm.patch \
+$(MC_SOURCE_DIR)/default_optware_env_variables.patch \
+
+MC_POST_AUTORECONF_PATCHES=\
+#$(MC_SOURCE_DIR)/default_locale_to_en_US.UTF-8.patch \
 
 #
 # If the compilation of the package requires additional
@@ -36,7 +42,7 @@ MC_IPK_VERSION=1
 #
 
 MC_CPPFLAGS=
-MC_LDFLAGS=-lpthread
+MC_LDFLAGS=-pthread
 
 #
 # MC_BUILD_DIR is the directory in which the build is done.
@@ -84,8 +90,8 @@ mc-source: $(DL_DIR)/$(MC_SOURCE) $(MC_PATCHES)
 # If the compilation of the package requires other packages to be staged
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
-$(MC_BUILD_DIR)/.configured: $(DL_DIR)/$(MC_SOURCE) $(MC_PATCHES) make/mc.mk
-	$(MAKE) e2fsprogs-stage glib-stage slang-stage
+$(MC_BUILD_DIR)/.configured: $(DL_DIR)/$(MC_SOURCE) $(MC_PATCHES) $(MC_POST_AUTORECONF_PATCHES) make/mc.mk
+	$(MAKE) e2fsprogs-stage glib-stage slang-stage gettext-stage #gettext-host-stage
 	rm -rf $(BUILD_DIR)/$(MC_DIR) $(MC_BUILD_DIR)
 	$(MC_UNZIP) $(DL_DIR)/$(MC_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(MC_PATCHES)" ; \
@@ -93,8 +99,13 @@ $(MC_BUILD_DIR)/.configured: $(DL_DIR)/$(MC_SOURCE) $(MC_PATCHES) make/mc.mk
 		$(PATCH) -bd $(BUILD_DIR)/$(MC_DIR) -p1 ; \
 	fi
 	mv $(BUILD_DIR)/$(MC_DIR) $(@D)
+#	sed -i -e 's/AM_GNU_GETTEXT_VERSION(.*)/AM_GNU_GETTEXT_VERSION($(GETTEXT_VERSION))/' $(@D)/configure.ac
 #	sed -i -e 's|/man2hlp |/man2hlp.host |' $(@D)/doc/hlp/Makefile.am $(@D)/doc/hlp/*/Makefile.am
-	$(AUTORECONF1.10) -vif $(@D)
+#	$(AUTORECONF1.10) -vif $(@D)
+	if test -n "$(MC_POST_AUTORECONF_PATCHES)" ; \
+		then cat $(MC_POST_AUTORECONF_PATCHES) | \
+		$(PATCH) -bd $(@D) -p1 ; \
+	fi
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(MC_CPPFLAGS)" \
@@ -167,7 +178,7 @@ $(MC_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 $(MC_IPK): $(MC_BUILD_DIR)/.built
-	rm -rf $(MC_IPK_DIR) $(MC_IPK)
+	rm -rf $(MC_IPK_DIR) $(BUILD_DIR)/mc_*_$(TARGET_ARCH).ipk
 	$(MAKE) -C $(MC_BUILD_DIR) DESTDIR=$(MC_IPK_DIR) install-strip
 	$(MAKE) $(MC_IPK_DIR)/CONTROL/control
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(MC_IPK_DIR)

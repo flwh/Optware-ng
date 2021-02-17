@@ -29,14 +29,14 @@ QUICKIE_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 QUICKIE_DESCRIPTION=A small footprint, fast C++ Wiki engine.
 QUICKIE_SECTION=web
 QUICKIE_PRIORITY=optional
-QUICKIE_DEPENDS=libstdc++, openssl, zlib
+QUICKIE_DEPENDS=libstdc++, openssl, zlib, file
 QUICKIE_SUGGESTS=
 QUICKIE_CONFLICTS=
 
 #
 # QUICKIE_IPK_VERSION should be incremented when the ipk changes.
 #
-QUICKIE_IPK_VERSION=3
+QUICKIE_IPK_VERSION=5
 
 #
 # QUICKIE_CONFFILES should be a list of user-editable files
@@ -49,6 +49,7 @@ QUICKIE_IPK_VERSION=3
 QUICKIE_PATCHES=\
 $(QUICKIE_SOURCE_DIR)/gcc4.patch \
 $(QUICKIE_SOURCE_DIR)/missing-includes.patch \
+$(QUICKIE_SOURCE_DIR)/parallelize_build.patch \
 $(QUICKIE_SOURCE_DIR)/Makefile.in.patch
 
 #
@@ -112,7 +113,7 @@ $(QUICKIE_HOST_BUILD_DIR)/.built: host/.configured $(DL_DIR)/$(QUICKIE_SOURCE) m
 	rm -f $(QUICKIE_HOST_BUILD_DIR)/.built
 	rm -rf $(HOST_BUILD_DIR)/$(QUICKIE_DIR) $(QUICKIE_HOST_BUILD_DIR)
 	$(QUICKIE_UNZIP) $(DL_DIR)/$(QUICKIE_SOURCE) | tar -C $(HOST_BUILD_DIR) -xvf -
-	cat $(QUICKIE_SOURCE_DIR)/gcc4.patch $(QUICKIE_SOURCE_DIR)/missing-includes.patch | $(PATCH) -d $(HOST_BUILD_DIR)/$(QUICKIE_DIR) -p0
+	cat $(QUICKIE_SOURCE_DIR)/gcc4.patch $(QUICKIE_SOURCE_DIR)/parallelize_build.patch $(QUICKIE_SOURCE_DIR)/missing-includes.patch | $(PATCH) -d $(HOST_BUILD_DIR)/$(QUICKIE_DIR) -p0
 	mv $(HOST_BUILD_DIR)/$(QUICKIE_DIR) $(QUICKIE_HOST_BUILD_DIR)
 	(cd $(QUICKIE_HOST_BUILD_DIR); \
 		./configure \
@@ -128,7 +129,7 @@ $(QUICKIE_BUILD_DIR)/.configured: $(DL_DIR)/$(QUICKIE_SOURCE) $(QUICKIE_PATCHES)
 else
 $(QUICKIE_BUILD_DIR)/.configured: $(QUICKIE_PATCHES) $(QUICKIE_HOST_BUILD_DIR)/.built
 endif
-	$(MAKE) openssl-stage zlib-stage
+	$(MAKE) openssl-stage zlib-stage file-stage
 	rm -rf $(BUILD_DIR)/$(QUICKIE_DIR) $(QUICKIE_BUILD_DIR)
 	$(QUICKIE_UNZIP) $(DL_DIR)/$(QUICKIE_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(QUICKIE_PATCHES)" ; \
@@ -176,7 +177,7 @@ quickie: $(QUICKIE_BUILD_DIR)/.built
 #
 $(QUICKIE_BUILD_DIR)/.staged: $(QUICKIE_BUILD_DIR)/.built
 	rm -f $(QUICKIE_BUILD_DIR)/.staged
-	$(MAKE) -C $(QUICKIE_BUILD_DIR) DESTDIR=$(STAGING_DIR) install
+	$(MAKE) -C $(QUICKIE_BUILD_DIR) DESTDIR=$(STAGING_DIR) install -j1
 	touch $(QUICKIE_BUILD_DIR)/.staged
 
 quickie-stage: $(QUICKIE_BUILD_DIR)/.staged
@@ -214,7 +215,7 @@ $(QUICKIE_IPK_DIR)/CONTROL/control:
 #
 $(QUICKIE_IPK): $(QUICKIE_BUILD_DIR)/.built
 	rm -rf $(QUICKIE_IPK_DIR) $(BUILD_DIR)/quickie_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(QUICKIE_BUILD_DIR) RPM_BUILD_ROOT=$(QUICKIE_IPK_DIR) install
+	$(MAKE) -C $(QUICKIE_BUILD_DIR) RPM_BUILD_ROOT=$(QUICKIE_IPK_DIR) install -j1
 	$(STRIP_COMMAND) $(QUICKIE_IPK_DIR)$(TARGET_PREFIX)/bin/*
 #	$(INSTALL) -d $(QUICKIE_IPK_DIR)$(TARGET_PREFIX)/etc/
 #	$(INSTALL) -m 644 $(QUICKIE_SOURCE_DIR)/quickie.conf $(QUICKIE_IPK_DIR)$(TARGET_PREFIX)/etc/quickie.conf

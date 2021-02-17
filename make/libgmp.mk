@@ -22,9 +22,9 @@
 # "NSLU2 Linux" other developers will feel free to edit.
 #
 LIBGMP_SITE=ftp://ftp.gnu.org/gnu/gmp
-LIBGMP_VERSION=6.0.0a
+LIBGMP_VERSION=6.1.2
 LIBGMP_SOURCE=gmp-$(LIBGMP_VERSION).tar.bz2
-LIBGMP_DIR=gmp-6.0.0
+LIBGMP_DIR=gmp-$(LIBGMP_VERSION)
 LIBGMP_UNZIP=bzcat
 LIBGMP_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 LIBGMP_DESCRIPTION=GNU Multiple Precision Arithmetic Library.
@@ -70,14 +70,6 @@ LIBGMP_HOST_BUILD_DIR=$(HOST_BUILD_DIR)/libgmp
 LIBGMP_SOURCE_DIR=$(SOURCE_DIR)/libgmp
 LIBGMP_IPK_DIR=$(BUILD_DIR)/libgmp-$(LIBGMP_VERSION)-ipk
 LIBGMP_IPK=$(BUILD_DIR)/libgmp_$(LIBGMP_VERSION)-$(LIBGMP_IPK_VERSION)_$(TARGET_ARCH).ipk
-
-ifeq ($(HOST_MACHINE), x86_64)
-LIBGMP_HOST32="--host=i586-pc-linux-gnu"
-LIBGMP_M32=-m32
-else
-LIBGMP_HOST32=
-LIBGMP_M32=
-endif
 
 .PHONY: libgmp-source libgmp-unpack libgmp libgmp-stage libgmp-ipk libgmp-clean libgmp-dirclean libgmp-check libgmp-host-stage
 
@@ -173,13 +165,14 @@ $(LIBGMP_HOST_BUILD_DIR)/.staged: host/.configured $(DL_DIR)/$(LIBGMP_SOURCE) ma
 		then mv $(HOST_BUILD_DIR)/$(LIBGMP_DIR) $(@D) ; \
 	fi
 	(cd $(@D); \
-	    CPPFLAGS="$(LIBGMP_M32)" \
-	    ./configure \
-		--prefix=/opt $(LIBGMP_HOST32) \
+		CFLAGS="-fPIC" \
+		./configure \
+		--prefix=$(HOST_STAGING_PREFIX) \
 		--disable-nls \
 		--disable-shared; \
-	    $(MAKE) DESTDIR=$(HOST_STAGING_DIR) install; \
 	)
+	$(MAKE) -C $(@D)
+	$(MAKE) install -C $(@D)
 	touch $@
 
 libgmp-host-stage: $(LIBGMP_HOST_BUILD_DIR)/.staged

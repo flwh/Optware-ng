@@ -22,7 +22,7 @@
 # http://www.remotesensing.org/libtiff/
 #
 LIBTIFF_SITE=http://download.osgeo.org/libtiff
-LIBTIFF_VERSION=3.9.5
+LIBTIFF_VERSION=3.9.7
 LIBTIFF_SOURCE=tiff-$(LIBTIFF_VERSION).tar.gz
 LIBTIFF_DIR=tiff-$(LIBTIFF_VERSION)
 LIBTIFF_UNZIP=zcat
@@ -30,14 +30,14 @@ LIBTIFF_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 LIBTIFF_DESCRIPTION=Tag Image File Format Libraries
 LIBTIFF_SECTION=lib
 LIBTIFF_PRIORITY=optional
-LIBTIFF_DEPENDS=zlib, libstdc++
+LIBTIFF_DEPENDS=zlib, libstdc++, libjpeg
 LIBTIFF_SUGGESTS=
 LIBTIFF_CONFLICTS=
 
 #
 # LIBTIFF_IPK_VERSION should be incremented when the ipk changes.
 #
-LIBTIFF_IPK_VERSION=1
+LIBTIFF_IPK_VERSION=2
 
 #
 # LIBTIFF_PATCHES should list any patches, in the the order in
@@ -101,7 +101,7 @@ $(DL_DIR)/$(LIBTIFF_SOURCE):
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
 $(LIBTIFF_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBTIFF_SOURCE) $(LIBTIFF_PATCHES) make/libtiff.mk
-#	$(MAKE) <bar>-stage <baz>-stage
+	$(MAKE) zlib-stage libjpeg-stage
 	rm -rf $(BUILD_DIR)/$(LIBTIFF_DIR) $(@D)
 	$(LIBTIFF_UNZIP) $(DL_DIR)/$(LIBTIFF_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 #	cat $(LIBTIFF_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(LIBTIFF_DIR) -p1
@@ -192,7 +192,7 @@ $(LIBTIFF_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 $(LIBTIFF_IPK): $(LIBTIFF_BUILD_DIR)/.built
-	rm -rf $(LIBTIFF_IPK_DIR) $(LIBTIFF_IPK)
+	rm -rf $(LIBTIFF_IPK_DIR) $(BUILD_DIR)/libtiff_*_$(TARGET_ARCH).ipk
 	$(INSTALL) -d $(LIBTIFF_IPK_DIR)$(TARGET_PREFIX)/bin
 	$(MAKE) -C $(LIBTIFF_BUILD_DIR) DESTDIR=$(LIBTIFF_IPK_DIR) install-exec transform=''
 	$(STRIP_COMMAND) $(LIBTIFF_IPK_DIR)$(TARGET_PREFIX)/bin/*

@@ -145,7 +145,7 @@ ipac-ng-unpack: $(IPAC-NG_BUILD_DIR)/.configured
 #
 $(IPAC-NG_BUILD_DIR)/.built: $(IPAC-NG_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(@D) HOSTCC=$(HOSTCC)
+	$(MAKE) -C $(@D) -j1 HOSTCC=$(HOSTCC)
 	touch $@
 
 #

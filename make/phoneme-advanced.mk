@@ -38,7 +38,7 @@ PHONEME_ADVANCED_CONFLICTS=
 #
 # PHONEME_ADVANCED_IPK_VERSION should be incremented when the ipk changes.
 #
-PHONEME_ADVANCED_IPK_VERSION=1
+PHONEME_ADVANCED_IPK_VERSION=2
 
 #
 # PHONEME_ADVANCED_CONFFILES should be a list of user-editable files
@@ -159,7 +159,7 @@ $(PHONEME_ADVANCED_PATCHES)
 ifeq ($(PHONEME_ADVANCED_ARCH), $(filter mips powerpc, $(PHONEME_ADVANCED_ARCH)))
 	tar -C $(PHONEME_ADVANCED_BUILD_DIR)/cdc -xvzf $(PHONEME_ADVANCED_SOURCE_DIR)/linux-$(PHONEME_ADVANCED_ARCH).tar.gz
 endif
-ifneq (, $(filter cs08q1armel slugosbe slugosle slugos5be slugos5le, $(OPTWARE_TARGET)))
+ifneq (, $(filter buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
 	tar -C $(PHONEME_ADVANCED_BUILD_DIR)/cdc/src/linux-arm -xvzf $(PHONEME_ADVANCED_SOURCE_DIR)/missing-asm-ucontext-h.tar.gz
 endif
 	( [ -e $(PHONEME_ADVANCED_SOURCE_DIR)/GNUmakefile.$(OPTWARE_TARGET) ] && \
@@ -174,7 +174,7 @@ ifeq ($(OPTWARE_TARGET), $(filter shibby-tomato-arm buildroot-armeabi buildroot-
 #	uclibc built without sigignore() implementation
 	sed -i -e '/CVMBool CVMinitVMTargetGlobalState()/ i int sigignore (int sig)\n{\nstruct sigaction act;\nmemset(\&act, 0, sizeof(act));\nact.sa_handler = SIG_IGN;\nreturn sigaction (sig, \&act, NULL);\n}' $(@D)/cdc/src/linux/javavm/runtime/globals_md.c
 endif
-ifeq ($(OPTWARE_TARGET), $(filter shibby-tomato-arm buildroot-armeabi buildroot-armeabi-ng buildroot-armv5eabi-ng buildroot-armeabihf, $(OPTWARE_TARGET)))
+ifeq ($(OPTWARE_TARGET), $(filter shibby-tomato-arm buildroot-armeabi buildroot-armeabi-ng buildroot-armv5eabi-ng buildroot-armv5eabi-ng-legacy buildroot-armeabihf, $(OPTWARE_TARGET)))
 #	fix for Assembler messages: Error: .size expression for atomicSwap does not evaluate to a constant
 	sed -i -e '/SET_SIZE(atomicSwap)/s/^/@/' $(@D)/cdc/src/arm/javavm/runtime/atomic_arm.S
 endif
@@ -187,7 +187,7 @@ phoneme-advanced-unpack: $(PHONEME_ADVANCED_BUILD_DIR)/.configured
 #
 $(PHONEME_ADVANCED_BUILD_DIR)/.built: $(PHONEME_ADVANCED_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(PHONEME_ADVANCED_CDC_BUILD_DIR) bin \
+	$(MAKE) -C $(PHONEME_ADVANCED_CDC_BUILD_DIR) bin -j1 JOBS=`nproc` \
 		USE_VERBOSE_MAKE=true \
 		TOOLS_DIR=$(PHONEME_ADVANCED_BUILD_DIR)/tools \
 		J2ME_CLASSLIB=foundation \

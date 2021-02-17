@@ -36,7 +36,9 @@ LIBUSB_IPK_VERSION=2
 # LIBUSB_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-LIBUSB_PATCHES=$(LIBUSB_SOURCE_DIR)/digitemp.patch
+LIBUSB_PATCHES=\
+$(LIBUSB_SOURCE_DIR)/digitemp.patch \
+$(LIBUSB_SOURCE_DIR)/no-werror.patch \
 
 #
 # If the compilation of the package requires additional
@@ -131,6 +133,7 @@ $(LIBUSB_BUILD_DIR)/.staged: $(LIBUSB_BUILD_DIR)/.built
 	rm -f $@
 	$(MAKE) -C $(LIBUSB_BUILD_DIR) DESTDIR=$(STAGING_DIR) \
 		SUBDIRS=. lib_LTLIBRARIES=libusb.la install
+	rm -f $(STAGING_LIB_DIR)/libusb.la
 	sed -i -e 's|^prefix=.*|prefix=$(STAGING_PREFIX)|' $(STAGING_LIB_DIR)/pkgconfig/libusb.pc
 	touch $@
 
@@ -168,7 +171,7 @@ $(LIBUSB_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 $(LIBUSB_IPK): $(LIBUSB_BUILD_DIR)/.built
-	rm -rf $(LIBUSB_IPK_DIR) $(LIBUSB_IPK)
+	rm -rf $(LIBUSB_IPK_DIR) $(BUILD_DIR)/libusb_*_$(TARGET_ARCH).ipk
 	$(MAKE) -C $(LIBUSB_BUILD_DIR) DESTDIR=$(LIBUSB_IPK_DIR) \
 		SUBDIRS=. lib_LTLIBRARIES=libusb.la install-strip
 	( cd $(LIBUSB_BUILD_DIR)/tests ; \

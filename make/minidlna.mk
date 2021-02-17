@@ -10,6 +10,7 @@
 # this cvs module is checked out.
 #
 
+ifndef MINIDLNA_SITE
 #MINIDLNA_REPOSITORY=git://git.code.sf.net/p/minidlna/git
 MINIDLNA_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/minidlna
 ifndef MINIDLNA_REPOSITORY
@@ -43,7 +44,7 @@ MINIDLNA_THUMBNAIL_CONFLICTS=minidlna, minidlna-rescan, minidlna-rescan-thumbnai
 #
 # MINIDLNA_IPK_VERSION should be incremented when the ipk changes.
 #
-MINIDLNA_IPK_VERSION=2
+MINIDLNA_IPK_VERSION=5
 
 #
 # MINIDLNA_CONFFILES should be a list of user-editable files
@@ -358,3 +359,4 @@ minidlna-dirclean:
 #
 minidlna-check: $(MINIDLNA_IPK) $(MINIDLNA_THUMBNAIL_IPK)
 	perl scripts/optware-check-package.pl --target=$(OPTWARE_TARGET) $^
+endif

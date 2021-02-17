@@ -36,11 +36,11 @@ POUND_CONFLICTS=
 #
 # POUND_IPK_VERSION should be incremented when the ipk changes.
 #
-POUND_IPK_VERSION=4
+POUND_IPK_VERSION=8
 
 #
 # POUND_CONFFILES should be a list of user-editable files
-POUND_CONFFILES=$(TARGET_PREFIX)/etc/pound.cfg $(TARGET_PREFIX)/etc/init.d/pound
+POUND_CONFFILES=$(TARGET_PREFIX)/etc/pound.cfg $(TARGET_PREFIX)/etc/init.d/S65pound
 
 #
 # POUND_PATCHES should list any patches, in the the order in
@@ -199,12 +199,12 @@ $(POUND_IPK): $(POUND_BUILD_DIR)/.built
 	$(MAKE) -C $(POUND_BUILD_DIR) DESTDIR=$(POUND_IPK_DIR) install
 	$(STRIP_COMMAND) $(POUND_IPK_DIR)$(TARGET_PREFIX)/sbin/pound*
 	chmod 555 $(POUND_IPK_DIR)$(TARGET_PREFIX)/sbin/pound
-#	$(INSTALL) -d $(POUND_IPK_DIR)$(TARGET_PREFIX)/etc/
+#	$(INSTALL) -d $(POUND_IPK_DIR)$(TARGET_PREFIX)/etc
 	$(INSTALL) -m 644 $(POUND_SOURCE_DIR)/pound.cfg $(POUND_IPK_DIR)$(TARGET_PREFIX)/etc/pound.cfg
 #	$(INSTALL) -d $(POUND_IPK_DIR)$(TARGET_PREFIX)/etc/init.d
-	$(INSTALL) -m 755 $(POUND_SOURCE_DIR)/rc.pound $(POUND_IPK_DIR)$(TARGET_PREFIX)/etc/init.d/pound
+	$(INSTALL) -m 755 $(POUND_SOURCE_DIR)/rc.pound $(POUND_IPK_DIR)$(TARGET_PREFIX)/etc/init.d/S65pound
 	$(MAKE) $(POUND_IPK_DIR)/CONTROL/control
-#	$(INSTALL) -m 755 $(POUND_SOURCE_DIR)/postinst $(POUND_IPK_DIR)/CONTROL/postinst
+	$(INSTALL) -m 755 $(POUND_SOURCE_DIR)/postinst $(POUND_IPK_DIR)/CONTROL/postinst
 #	$(INSTALL) -m 755 $(POUND_SOURCE_DIR)/prerm $(POUND_IPK_DIR)/CONTROL/prerm
 	echo $(POUND_CONFFILES) | sed -e 's/ /\n/g' > $(POUND_IPK_DIR)/CONTROL/conffiles
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(POUND_IPK_DIR)

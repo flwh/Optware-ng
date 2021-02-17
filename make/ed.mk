@@ -20,10 +20,10 @@
 # You should change all these variables to suit your package.
 #
 ED_SITE=http://ftp.gnu.org/gnu/ed
-ED_VERSION=1.5
-ED_SOURCE=ed-$(ED_VERSION).tar.gz
+ED_VERSION=1.14.2
+ED_SOURCE=ed-$(ED_VERSION).tar.lz
 ED_DIR=ed-$(ED_VERSION)
-ED_UNZIP=zcat
+ED_UNZIP=lzip -d -c -k
 ED_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 ED_DESCRIPTION=Line editor
 ED_SECTION=util
@@ -35,7 +35,7 @@ ED_CONFLICTS=
 #
 # ED_IPK_VERSION should be incremented when the ipk changes.
 #
-ED_IPK_VERSION=1
+ED_IPK_VERSION=2
 
 #
 # ED_PATCHES should list any patches, in the the order in
@@ -167,6 +167,7 @@ $(ED_IPK): $(ED_BUILD_DIR)/.built
 	$(MAKE) -C $(ED_BUILD_DIR) prefix=$(ED_IPK_DIR)$(TARGET_PREFIX) install INSTALL_DATA=:
 	$(STRIP_COMMAND) $(ED_IPK_DIR)$(TARGET_PREFIX)/bin/ed
 	$(MAKE) -C $(ED_BUILD_DIR) prefix=$(ED_IPK_DIR)$(TARGET_PREFIX) install-man
+	rm -f $(ED_IPK_DIR)$(TARGET_PREFIX)/share/info/dir
 	$(MAKE) $(ED_IPK_DIR)/CONTROL/control
 #	echo $(ED_CONFFILES) | sed -e 's/ /\n/g' > $(ED_IPK_DIR)/CONTROL/conffiles
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(ED_IPK_DIR)

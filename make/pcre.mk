@@ -21,7 +21,8 @@
 # "NSLU2 Linux" other developers will feel free to edit.
 #
 
-PCRE_SITE=ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre
+PCRE_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/pcre
+PCRE_SITE2=http://ftp.cs.stanford.edu/pub/exim/pcre
 PCRE_VERSION=8.36
 PCRE_SOURCE=pcre-$(PCRE_VERSION).tar.bz2
 PCRE_DIR=pcre-$(PCRE_VERSION)
@@ -42,7 +43,7 @@ endif
 #
 # PCRE_IPK_VERSION should be incremented when the ipk changes.
 #
-PCRE_IPK_VERSION=1
+PCRE_IPK_VERSION=2
 
 #
 # PCRE_PATCHES should list any patches, in the the order in
@@ -87,6 +88,7 @@ PCRE-DEV_IPK=$(BUILD_DIR)/pcre-dev_$(PCRE_VERSION)-$(PCRE_IPK_VERSION)_$(TARGET_
 #
 $(DL_DIR)/$(PCRE_SOURCE):
 	$(WGET) -P $(@D) $(PCRE_SITE)/$(@F) || \
+	$(WGET) -P $(@D) $(PCRE_SITE2)/$(@F) || \
 	$(WGET) -P $(@D) $(SOURCES_NLO_SITE)/$(@F)
 
 #
@@ -164,6 +166,7 @@ $(PCRE_BUILD_DIR)/.staged: $(PCRE_BUILD_DIR)/.built
 	rm -f $@
 	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install
 	rm -f $(STAGING_LIB_DIR)/libpcre.la
+	rm -f $(STAGING_LIB_DIR)/libpcrecpp.la
 	rm -f $(STAGING_LIB_DIR)/libpcreposix.la
 	sed -i -e 's|^prefix=.*|prefix=$(STAGING_PREFIX)|' \
 		$(STAGING_PREFIX)/bin/pcre-config \

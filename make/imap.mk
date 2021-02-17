@@ -27,10 +27,11 @@
 # "NSLU2 Linux" other developers will feel free to edit.
 #
 IMAP_SITE=ftp://ftp.cac.washington.edu/imap
-IMAP_VERSION=2007a1
-IMAP_SOURCE=imap-$(IMAP_VERSION).tar.Z
+IMAP_SITE2=http://ftp.gnome.org/mirror/archive/ftp.sunet.se/pub/unix/mail/imap
+IMAP_VERSION=2007f
+IMAP_SOURCE=imap-$(IMAP_VERSION).tar.gz
 IMAP_DIR=imap-$(IMAP_VERSION)
-IMAP_DIR=imap-2007a
+IMAP_DIR=imap-2007f
 IMAP_UNZIP=zcat
 IMAP_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 IMAP_DESCRIPTION=University of Washington IMAP package
@@ -86,7 +87,8 @@ IMAP_LIBS_IPK=$(BUILD_DIR)/imap-libs_$(IMAP_VERSION)-$(IMAP_IPK_VERSION)_$(TARGE
 # then it will be fetched from the site using wget.
 #
 $(DL_DIR)/$(IMAP_SOURCE):
-	$(WGET) -P $(DL_DIR) $(IMAP_SITE)/$(IMAP_SOURCE)
+	$(WGET) -P $(DL_DIR) $(IMAP_SITE)/$(IMAP_SOURCE) || \
+	$(WGET) -P $(DL_DIR) $(IMAP_SITE2)/$(IMAP_SOURCE)
 
 #
 # The source code depends on it existing within the download directory.
@@ -110,7 +112,7 @@ imap-source: $(DL_DIR)/$(IMAP_SOURCE) $(IMAP_PATCHES)
 # If the compilation of the package requires other packages to be staged
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
-$(IMAP_BUILD_DIR)/.configured: $(DL_DIR)/$(IMAP_SOURCE) $(IMAP_PATCHES)
+$(IMAP_BUILD_DIR)/.configured: $(DL_DIR)/$(IMAP_SOURCE) $(IMAP_PATCHES) make/imap.mk
 	$(MAKE) openssl-stage
 	rm -rf $(BUILD_DIR)/$(IMAP_DIR) $(IMAP_BUILD_DIR)
 	$(IMAP_UNZIP) $(DL_DIR)/$(IMAP_SOURCE) | tar -C $(BUILD_DIR) -xvf -

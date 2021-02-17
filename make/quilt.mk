@@ -29,18 +29,18 @@ QUILT_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 QUILT_DESCRIPTION=A set of scripts to manage a series of patches.
 QUILT_SECTION=misc
 QUILT_PRIORITY=optional
-QUILT_DEPENDS=perl, coreutils, bash, diffutils, patch, util-linux-ng
+QUILT_DEPENDS=perl, coreutils, bash, diffutils, patch, util-linux
 QUILT_SUGGESTS=
 QUILT_CONFLICTS=quilt-lite
 
-QUILT-LITE_DEPENDS=coreutils, bash, diffutils, patch, getopt
+QUILT-LITE_DEPENDS=coreutils, bash, diffutils, patch, util-linux
 QUILT-LITE_SUGGESTS=
 QUILT-LITE_CONFLICTS=quilt
 
 #
 # QUILT_IPK_VERSION should be incremented when the ipk changes.
 #
-QUILT_IPK_VERSION=5
+QUILT_IPK_VERSION=7
 
 #
 # QUILT_CONFFILES should be a list of user-editable files
@@ -243,7 +243,7 @@ $(QUILT-LITE_IPK): $(QUILT_BUILD_DIR)/.built
 	  rm -f annotate )
 	( cd $(QUILT-LITE_IPK_DIR)$(TARGET_PREFIX)/share/quilt/scripts ; \
 	  rm -f dependency-graph edmail parse-patch remove-trailing-ws )
-	( cd $(QUILT-LITE_IPK_DIR) ; $(PATCH) -p0 < $(QUILT_SOURCE_DIR)/quilt-lite.patch )
+	( cd $(QUILT-LITE_IPK_DIR)$(TARGET_PREFIX) ; $(PATCH) -p1 < $(QUILT_SOURCE_DIR)/quilt-lite.patch )
 	$(STRIP_COMMAND) $(QUILT-LITE_IPK_DIR)$(TARGET_PREFIX)/lib/quilt/backup-files
 	$(INSTALL) -d $(QUILT-LITE_IPK_DIR)$(TARGET_PREFIX)/etc/
 	$(INSTALL) -m 644 $(QUILT_SOURCE_DIR)/quilt.quiltrc $(QUILT-LITE_IPK_DIR)$(TARGET_PREFIX)/etc/quilt.quiltrc

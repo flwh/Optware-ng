@@ -46,7 +46,7 @@ LIBDVB_HEADERS_DIR=DVB
 #
 # LIBDVB_IPK_VERSION should be incremented when the ipk changes.
 #
-LIBDVB_IPK_VERSION=1
+LIBDVB_IPK_VERSION=2
 
 #
 # LIBDVB_CONFFILES should be a list of user-editable files
@@ -56,7 +56,9 @@ LIBDVB_CONFFILES=
 # LIBDVB_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-LIBDVB_PATCHES=$(LIBDVB_SOURCE_DIR)/topf2ps.patch
+LIBDVB_PATCHES=\
+$(LIBDVB_SOURCE_DIR)/topf2ps.patch \
+$(LIBDVB_SOURCE_DIR)/sample_progs-cam_menu.cc.patch \
 
 #
 # If the compilation of the package requires additional
@@ -130,6 +132,11 @@ libdvb-unpack: $(LIBDVB_BUILD_DIR)/.configured
 #
 $(LIBDVB_BUILD_DIR)/.built: $(LIBDVB_BUILD_DIR)/.configured
 	rm -f $@
+	$(MAKE) -C $(@D) \
+		$(TARGET_CONFIGURE_OPTS) \
+		INCLUDES="$(STAGING_CPPFLAGS) $(LIBDVB_CPPFLAGS)" \
+		LIBS="$(STAGING_LDFLAGS) $(LIBDVB_LDFLAGS) -L../ -ldvbmpegtools" \
+		PREFIX=$(TARGET_PREFIX) cam_set cam_test
 	$(MAKE) -C $(@D) \
 		$(TARGET_CONFIGURE_OPTS) \
 		INCLUDES="$(STAGING_CPPFLAGS) $(LIBDVB_CPPFLAGS)" \

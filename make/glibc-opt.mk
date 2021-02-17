@@ -15,7 +15,7 @@ GLIBC-OPT_LIBS_SOURCE_DIR ?= $(TARGET_USRLIBDIR)
 GLIBC-OPT_DESCRIPTION=GNU C Library
 GLIBC-OPT_SECTION=base
 GLIBC-OPT_PRIORITY=required
-GLIBC-OPT_DEPENDS=libnsl
+GLIBC-OPT_DEPENDS=$(strip $(if $(filter true, $(NO_LIBNSL)), , libnsl))
 GLIBC-OPT_SUGGESTS=
 GLIBC-OPT_CONFLICTS=
 
@@ -90,6 +90,13 @@ $(GLIBC-OPT_IPK): make/glibc-opt.mk
 	### package non-stripped libpthread and libthread_db
 	cp -f $(GLIBC-OPT_LIBS_SOURCE_DIR)/libpthread* $(GLIBC-OPT_LIBS_SOURCE_DIR)/libthread_db* \
 							$(GLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/lib
+	# these are provided by libc-dev
+	rm -f `ls $(GLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/lib/*{.so,.a} | egrep -v -- '-[0-9\.]*\.so$$'` \
+		$(GLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/lib/libgcc_s.so
+	# create $(TARGET_PREFIX)/lib64 -> lib symlink for 64-bit archs
+	if $(TARGET_CC) -E -P $(SOURCE_DIR)/common/bits.c | grep -q puts.*64-bit; then \
+		ln -s lib $(GLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/lib64; \
+	fi
 	$(MAKE) $(GLIBC-OPT_IPK_DIR)/CONTROL/control
 #	$(INSTALL) -m 755 $(BUILDROOT_SOURCE_DIR)/prerm $(GLIBC-OPT_IPK_DIR)/CONTROL/prerm
 #	echo $(GLIBC-OPT_CONFFILES) | sed -e 's/ /\n/g' > $(GLIBC-OPT_IPK_DIR)/CONTROL/conffiles

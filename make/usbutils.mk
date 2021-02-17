@@ -20,7 +20,7 @@ USBUTILS_SOURCE=usbutils-$(USBUTILS_VERSION).tar.bz2
 USBUTILS_DIR=usbutils-$(USBUTILS_VERSION)
 USBUTILS_UNZIP=bzcat
 USBUTILS_PRIORITY=optional
-USBUTILS_DEPENDS=libusb, zlib
+USBUTILS_DEPENDS=libusb, libusb1, zlib
 USBUTILS_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 USBUTILS_SECTION=utility
 USBUTILS_DESCRIPTION=USB enumeration utilities
@@ -29,11 +29,11 @@ USBUTILS_DESCRIPTION=USB enumeration utilities
 #
 # USBUTILS_IPK_VERSION should be incremented when the ipk changes.
 #
-USBUTILS_IPK_VERSION=3
+USBUTILS_IPK_VERSION=6
 
 #
 # USBUTILS_CONFFILES should be a list of user-editable files
-USBUTILS_CONFFILES=$(TARGET_PREFIX)/share/misc/usb.ids
+#USBUTILS_CONFFILES=$(TARGET_PREFIX)/share/misc/usb.ids
 
 #
 # USBUTILS_PATCHES should list any patches, in the the order in
@@ -93,7 +93,7 @@ usbutils-source: $(DL_DIR)/$(USBUTILS_SOURCE) $(USBUTILS_PATCHES)
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
 $(USBUTILS_BUILD_DIR)/.configured: $(DL_DIR)/$(USBUTILS_SOURCE) $(USBUTILS_PATCHES) make/usbutils.mk
-	$(MAKE) libusb-stage zlib-stage
+	$(MAKE) libusb-stage libusb1-stage zlib-stage
 	rm -rf $(BUILD_DIR)/$(USBUTILS_DIR) $(@D)
 	$(USBUTILS_UNZIP) $(DL_DIR)/$(USBUTILS_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(USBUTILS_PATCHES)"; then \
@@ -175,6 +175,7 @@ $(USBUTILS_IPK): $(USBUTILS_BUILD_DIR)/.built
 	rm -rf $(USBUTILS_IPK_DIR) $(BUILD_DIR)/usbutils_*_$(TARGET_ARCH).ipk
 	$(MAKE) -C $(USBUTILS_BUILD_DIR) DESTDIR=$(USBUTILS_IPK_DIR) install-strip
 	$(INSTALL) -m 755 $(USBUTILS_BUILD_DIR)/update-usbids.sh $(USBUTILS_IPK_DIR)$(TARGET_PREFIX)/sbin/
+	rm -f $(USBUTILS_IPK_DIR)$(TARGET_PREFIX)/share/misc/usb.ids
 	$(INSTALL) -d $(USBUTILS_IPK_DIR)$(TARGET_PREFIX)/lib/pkgconfig
 	$(INSTALL) -m 644 $(USBUTILS_BUILD_DIR)/usbutils.pc $(USBUTILS_IPK_DIR)$(TARGET_PREFIX)/lib/pkgconfig
 	# don't want these as they conflict with real libusb
@@ -184,7 +185,7 @@ $(USBUTILS_IPK): $(USBUTILS_BUILD_DIR)/.built
 #	$(INSTALL) -d $(USBUTILS_IPK_DIR)$(TARGET_PREFIX)/etc/init.d
 #	$(INSTALL) -m 755 $(USBUTILS_SOURCE_DIR)/rc.usbutils $(USBUTILS_IPK_DIR)$(TARGET_PREFIX)/etc/init.d/SXXusbutils
 	$(MAKE) $(USBUTILS_IPK_DIR)/CONTROL/control
-#	$(INSTALL) -m 755 $(USBUTILS_SOURCE_DIR)/postinst $(USBUTILS_IPK_DIR)/CONTROL/postinst
+	$(INSTALL) -m 755 $(USBUTILS_SOURCE_DIR)/postinst $(USBUTILS_IPK_DIR)/CONTROL/postinst
 #	$(INSTALL) -m 755 $(USBUTILS_SOURCE_DIR)/prerm $(USBUTILS_IPK_DIR)/CONTROL/prerm
 #	echo $(USBUTILS_CONFFILES) | sed -e 's/ /\n/g' > $(USBUTILS_IPK_DIR)/CONTROL/conffiles
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(USBUTILS_IPK_DIR)

@@ -4,8 +4,8 @@
 #
 ###########################################################
 
-PERL-URI_SITE=http://$(PERL_CPAN_SITE)/CPAN/authors/id/G/GA/GAAS
-PERL-URI_VERSION=1.60
+PERL-URI_SITE=http://$(PERL_CPAN_SITE)/CPAN/authors/id/E/ET/ETHER
+PERL-URI_VERSION=1.72
 PERL-URI_SOURCE=URI-$(PERL-URI_VERSION).tar.gz
 PERL-URI_DIR=URI-$(PERL-URI_VERSION)
 PERL-URI_UNZIP=zcat
@@ -33,7 +33,7 @@ $(DL_DIR)/$(PERL-URI_SOURCE):
 
 perl-uri-source: $(DL_DIR)/$(PERL-URI_SOURCE) $(PERL-URI_PATCHES)
 
-$(PERL-URI_BUILD_DIR)/.configured: $(DL_DIR)/$(PERL-URI_SOURCE) $(PERL-URI_PATCHES)
+$(PERL-URI_BUILD_DIR)/.configured: $(DL_DIR)/$(PERL-URI_SOURCE) $(PERL-URI_PATCHES) make/perl-uri.mk
 	rm -rf $(BUILD_DIR)/$(PERL-URI_DIR) $(PERL-URI_BUILD_DIR)
 	$(PERL-URI_UNZIP) $(DL_DIR)/$(PERL-URI_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 #	cat $(PERL-URI_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(PERL-URI_DIR) -p1

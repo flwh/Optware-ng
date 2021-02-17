@@ -21,10 +21,10 @@
 # "NSLU2 Linux" other developers will feel free to edit.
 #
 MODULE_INIT_TOOLS_SITE=http://www.kernel.org/pub/linux/utils/kernel/module-init-tools
-MODULE_INIT_TOOLS_VERSION=3.5
-MODULE_INIT_TOOLS_SOURCE=module-init-tools-$(MODULE_INIT_TOOLS_VERSION).tar.bz2
+MODULE_INIT_TOOLS_VERSION=3.15
+MODULE_INIT_TOOLS_SOURCE=module-init-tools-$(MODULE_INIT_TOOLS_VERSION).tar.xz
 MODULE_INIT_TOOLS_DIR=module-init-tools-$(MODULE_INIT_TOOLS_VERSION)
-MODULE_INIT_TOOLS_UNZIP=bzcat
+MODULE_INIT_TOOLS_UNZIP=xzcat
 MODULE_INIT_TOOLS_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 MODULE_INIT_TOOLS_DESCRIPTION=This package contains a set of programs for loading, inserting, and removing kernel modules for Linux (versions 2.5.48 and above). It serves the same function that the "modutils" package serves for Linux 2.4.
 MODULE_INIT_TOOLS_SECTION=utils
@@ -53,7 +53,10 @@ MODULE_INIT_TOOLS_IPK_VERSION=1
 # compilation or linking flags, then list them here.
 #
 MODULE_INIT_TOOLS_CPPFLAGS=
-ifneq (, $(filter syno-x07, $(OPTWARE_TARGET)))
+ifneq (, $(filter ct-ng-ppc-e500v2, $(OPTWARE_TARGET)))
+MODULE_INIT_TOOLS_CPPFLAGS += -DCONFIG_NO_BACKWARDS_COMPAT
+endif
+ifeq ($(LIBC_STYLE),uclibc)
 MODULE_INIT_TOOLS_CPPFLAGS += -DCONFIG_NO_BACKWARDS_COMPAT
 endif
 MODULE_INIT_TOOLS_LDFLAGS=

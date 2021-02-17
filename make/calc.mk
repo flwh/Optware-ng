@@ -46,7 +46,7 @@ CALC_IPK_VERSION=1
 # CALC_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-#CALC_PATCHES=$(CALC_SOURCE_DIR)/configure.patch
+CALC_PATCHES=$(CALC_SOURCE_DIR)/parallel_build.patch
 
 #
 # If the compilation of the package requires additional
@@ -55,9 +55,12 @@ CALC_IPK_VERSION=1
 CALC_CPPFLAGS=
 CALC_LDFLAGS=
 
-CALC_LONG_BITS=$(strip \
-$(if $(filter x86_64 amd64, $(TARGET_ARCH)), 64, \
-32))
+CALC_LONG_BITS=`\
+if $(TARGET_CC) -E -P $(SOURCE_DIR)/common/bits.c | grep -q puts.*32-bit; then \
+	echo 32; \
+else \
+	echo 64; \
+fi`
 # override this variable in platforms/packages-<target>.mk
 CALC_HAVE_USTAT?=no
 # set to yes if target has ustat.h
@@ -123,7 +126,7 @@ $(CALC_BUILD_DIR)/.configured: $(DL_DIR)/$(CALC_SOURCE) $(CALC_PATCHES) make/cal
 	$(CALC_UNZIP) $(DL_DIR)/$(CALC_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(CALC_PATCHES)" ; \
 		then cat $(CALC_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(CALC_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(CALC_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(CALC_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(CALC_DIR) $(@D) ; \
@@ -161,8 +164,7 @@ $(CALC_BUILD_DIR)/.built: $(CALC_BUILD_DIR)/.configured
 		INCDIR=$(TARGET_INCDIR) \
 		MANDIR=$(TARGET_PREFIX)/man \
 		LIBDIR=$(TARGET_PREFIX)/lib \
-		DEFAULT_LIB_INSTALL_PATH=$(TARGET_PREFIX)/lib \
-		;
+		DEFAULT_LIB_INSTALL_PATH=$(TARGET_PREFIX)/lib
 	touch $@
 
 #

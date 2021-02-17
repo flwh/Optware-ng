@@ -36,7 +36,7 @@ QEMACS_CONFLICTS=
 #
 # QEMACS_IPK_VERSION should be incremented when the ipk changes.
 #
-QEMACS_IPK_VERSION=1
+QEMACS_IPK_VERSION=2
 
 #
 # QEMACS_CONFFILES should be a list of user-editable files
@@ -46,7 +46,8 @@ QEMACS_IPK_VERSION=1
 # QEMACS_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-QEMACS_PATCHES=$(QEMACS_SOURCE_DIR)/gcc4.patch
+QEMACS_PATCHES=$(QEMACS_SOURCE_DIR)/gcc4.patch \
+$(QEMACS_SOURCE_DIR)/avoid_target_cflags_for_csstoqe.patch
 
 #
 # If the compilation of the package requires additional

@@ -30,14 +30,14 @@ RHTVISION_DESCRIPTION=Turbo Vision (TVision for short) is a TUI (Text User Inter
 TVision was originally developed by Borland. This port is a port of the C++ version for the DOS, FreeBSD, Linux, QNX, Solaris and Win32 platforms.
 RHTVISION_SECTION=lib
 RHTVISION_PRIORITY=optional
-RHTVISION_DEPENDS=ncurses
+RHTVISION_DEPENDS=libstdc++, ncurses
 RHTVISION_SUGGESTS=
 RHTVISION_CONFLICTS=
 
 #
 # RHTVISION_IPK_VERSION should be incremented when the ipk changes.
 #
-RHTVISION_IPK_VERSION=1
+RHTVISION_IPK_VERSION=3
 
 #
 # RHTVISION_CONFFILES should be a list of user-editable files
@@ -50,6 +50,7 @@ RHTVISION_IPK_VERSION=1
 RHTVISION_PATCHES=\
 $(RHTVISION_SOURCE_DIR)/conflib.pl-cross.patch \
 $(RHTVISION_SOURCE_DIR)/config.pl-cross.patch \
+$(RHTVISION_SOURCE_DIR)/make_abs_a_macro.patch \
 #$(RHTVISION_SOURCE_DIR)/gcc4.patch \
 
 #
@@ -115,7 +116,7 @@ rhtvision-source: $(DL_DIR)/$(RHTVISION_SOURCE) $(RHTVISION_PATCHES)
 # If the package uses  GNU libtool, you should invoke $(PATCH_LIBTOOL) as
 # shown below to make various patches to it.
 #
-$(RHTVISION_BUILD_DIR)/.configured: $(DL_DIR)/$(RHTVISION_SOURCE) $(RHTVISION_PATCHES) # make/rhtvision.mk
+$(RHTVISION_BUILD_DIR)/.configured: $(DL_DIR)/$(RHTVISION_SOURCE) $(RHTVISION_PATCHES) make/rhtvision.mk
 	$(MAKE) ncurses-stage
 	rm -rf $(BUILD_DIR)/$(RHTVISION_DIR) $(RHTVISION_BUILD_DIR)
 	$(RHTVISION_UNZIP) $(DL_DIR)/$(RHTVISION_SOURCE) | tar -C $(BUILD_DIR) -xvf -
@@ -161,7 +162,10 @@ rhtvision-unpack: $(RHTVISION_BUILD_DIR)/.configured
 #
 $(RHTVISION_BUILD_DIR)/.built: $(RHTVISION_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(RHTVISION_BUILD_DIR) all examples \
+	$(MAKE) -C $(RHTVISION_BUILD_DIR) all \
+		LDFLAGS="$(STAGING_LDFLAGS) $(RHTVISION_LDFLAGS)" \
+		;
+	$(MAKE) -C $(RHTVISION_BUILD_DIR) examples \
 		LDFLAGS="$(STAGING_LDFLAGS) $(RHTVISION_LDFLAGS)" \
 		;
 	touch $@

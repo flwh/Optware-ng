@@ -39,7 +39,7 @@ DANSGUARDIAN_CONFLICTS=
 #
 # DANSGUARDIAN_IPK_VERSION should be incremented when the ipk changes.
 #
-DANSGUARDIAN_IPK_VERSION=1
+DANSGUARDIAN_IPK_VERSION=2
 
 #
 # DANSGUARDIAN_CONFFILES should be a list of user-editable files
@@ -126,6 +126,7 @@ endif
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(DANSGUARDIAN_CPPFLAGS)" \
 		LDFLAGS="$(STAGING_LDFLAGS) $(DANSGUARDIAN_LDFLAGS)" \
+		PKG_CONFIG_PATH="$(STAGING_LIB_DIR)/pkgconfig" \
 		PATH="$(STAGING_PREFIX)/bin:$$PATH" \
 		ac_cv_func_malloc_0_nonnull=yes \
 		./configure \

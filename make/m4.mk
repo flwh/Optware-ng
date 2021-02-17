@@ -34,14 +34,14 @@ M4_CONFLICTS=
 #
 # M4_IPK_VERSION should be incremented when the ipk changes.
 #
-M4_IPK_VERSION=1
+M4_IPK_VERSION=2
 
 #
 # M4_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
 M4_PATCHES=
-ifeq ($(UCLIBC_NG), yes)
+ifeq ($(LIBC_STYLE), uclibc)
 M4_PATCHES+=$(M4_SOURCE_DIR)/$(M4_VERSION)/gnulib_fix_posixspawn.patch
 endif
 
@@ -196,7 +196,7 @@ $(M4_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 $(M4_IPK): $(M4_BUILD_DIR)/.built
-	rm -rf $(M4_IPK_DIR) $(M4_IPK)
+	rm -rf $(M4_IPK_DIR) $(BUILD_DIR)/m4_*_$(TARGET_ARCH).ipk
 	$(MAKE) -C $(M4_BUILD_DIR) DESTDIR=$(M4_IPK_DIR) install-strip
 #	$(INSTALL) -d $(M4_IPK_DIR)$(TARGET_PREFIX)/etc/init.d
 #	$(INSTALL) -m 755 $(M4_SOURCE_DIR)/rc.m4 $(M4_IPK_DIR)$(TARGET_PREFIX)/etc/init.d/SXXm4

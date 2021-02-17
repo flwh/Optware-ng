@@ -42,7 +42,7 @@ CLAMAV_CONFLICTS=
 #
 # CLAMAV_IPK_VERSION should be incremented when the ipk changes.
 #
-CLAMAV_IPK_VERSION=2
+CLAMAV_IPK_VERSION=4
 
 #
 # CLAMAV_CONFFILES should be a list of user-editable files
@@ -123,6 +123,7 @@ $(CLAMAV_BUILD_DIR)/.configured: $(DL_DIR)/$(CLAMAV_SOURCE) $(CLAMAV_PATCHES) ma
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(CLAMAV_CPPFLAGS)" \
+		CXXFLAGS="-std=c++98" \
 		LDFLAGS="$(STAGING_LDFLAGS) $(CLAMAV_LDFLAGS)" \
 		ac_cv_func_setpgrp_void=yes \
 		ac_cv_have_accrights_in_msghdr=no \
@@ -204,6 +205,10 @@ $(CLAMAV_IPK): $(CLAMAV_BUILD_DIR)/.built
 	rm -rf $(CLAMAV_IPK_DIR) $(BUILD_DIR)/clamav_*_$(TARGET_ARCH).ipk
 	$(MAKE) -C $(CLAMAV_BUILD_DIR) install-strip \
 		DESTDIR=$(CLAMAV_IPK_DIR) transform=""
+	if $(TARGET_CC) -E -P $(SOURCE_DIR)/common/bits.c | grep -q puts.*64-bit; then \
+		cd $(CLAMAV_IPK_DIR)$(TARGET_PREFIX) && \
+		mv -f lib64 lib; \
+	fi
 	$(INSTALL) -d $(CLAMAV_IPK_DIR)$(TARGET_PREFIX)/tmp/
 	$(INSTALL) -d $(CLAMAV_IPK_DIR)$(TARGET_PREFIX)/etc/
 	$(INSTALL) -m 644 $(CLAMAV_SOURCE_DIR)/clamd.conf $(CLAMAV_IPK_DIR)$(TARGET_PREFIX)/etc/clamd.conf

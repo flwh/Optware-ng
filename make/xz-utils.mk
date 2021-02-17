@@ -4,10 +4,10 @@
 #
 ###########################################################
 XZ_UTILS_SITE=http://tukaani.org/xz
-XZ_UTILS_VERSION=5.2.2
-XZ_UTILS_SOURCE=xz-$(XZ_UTILS_VERSION).tar.bz2
+XZ_UTILS_VERSION=5.2.4
+XZ_UTILS_SOURCE=xz-$(XZ_UTILS_VERSION).tar.xz
 XZ_UTILS_DIR=xz-$(XZ_UTILS_VERSION)
-XZ_UTILS_UNZIP=bzcat
+XZ_UTILS_UNZIP=xzcat
 XZ_UTILS_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 XZ_UTILS_DESCRIPTION=A free general-purpose data compression software with high compression ratio
 XZ_UTILS_SECTION=utils
@@ -157,7 +157,9 @@ $(XZ_UTILS_IPK) $(LIBLZMA0_IPK): $(XZ_UTILS_BUILD_DIR)/.built
 	$(MAKE) $(XZ_UTILS_IPK_DIR)/CONTROL/control $(LIBLZMA0_IPK_DIR)/CONTROL/control
 #	echo $(XZ_UTILS_CONFFILES) | sed -e 's/ /\n/g' > $(XZ_UTILS_IPK_DIR)/CONTROL/conffiles
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(XZ_UTILS_IPK_DIR)
+	$(WHAT_TO_DO_WITH_IPK_DIR) $(XZ_UTILS_IPK_DIR)
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(LIBLZMA0_IPK_DIR)
+	$(WHAT_TO_DO_WITH_IPK_DIR) $(LIBLZMA0_IPK_DIR)
 
 xz-utils-ipk: $(XZ_UTILS_IPK) $(LIBLZMA0_IPK)
 

@@ -29,14 +29,14 @@ ULOGD_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 ULOGD_DESCRIPTION=A userspace logging daemon for netfilter/iptables
 ULOGD_SECTION=utils
 ULOGD_PRIORITY=optional
-ULOGD_DEPENDS=libnfnetlink, libnetfilter-log, libnetfilter-conntrack, libmnl, libnetfilter-acct
+ULOGD_DEPENDS=libnfnetlink, libnetfilter-log, libnetfilter-conntrack, libmnl, libnetfilter-acct, libjansson, libpcap, sqlite
 ULOGD_SUGGESTS=
 ULOGD_CONFLICTS=
 
 #
 # ULOGD_IPK_VERSION should be incremented when the ipk changes.
 #
-ULOGD_IPK_VERSION=1
+ULOGD_IPK_VERSION=3
 
 #
 # ULOGD_CONFFILES should be a list of user-editable files
@@ -47,6 +47,9 @@ ULOGD_IPK_VERSION=1
 # which they should be applied to the source code.
 #
 #ULOGD_PATCHES=$(ULOGD_SOURCE_DIR)/configure.patch
+ifeq ($(OPTWARE_TARGET), $(filter buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
+ULOGD_PATCHES+=$(ULOGD_SOURCE_DIR)/fix_for_old_kernel.patch
+endif
 
 #
 # If the compilation of the package requires additional
@@ -106,12 +109,13 @@ ulogd-source: $(DL_DIR)/$(ULOGD_SOURCE) $(ULOGD_PATCHES)
 #
 $(ULOGD_BUILD_DIR)/.configured: $(DL_DIR)/$(ULOGD_SOURCE) $(ULOGD_PATCHES) make/ulogd.mk
 	$(MAKE) libpcap-stage sqlite-stage libnfnetlink-stage libnetfilter-log-stage \
-		libnetfilter-conntrack-stage libmnl-stage libnetfilter-acct-stage
+		libnetfilter-conntrack-stage libmnl-stage libnetfilter-acct-stage \
+		libjansson-stage
 	rm -rf $(BUILD_DIR)/$(ULOGD_DIR) $(@D)
 	$(ULOGD_UNZIP) $(DL_DIR)/$(ULOGD_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(ULOGD_PATCHES)" ; \
 		then cat $(ULOGD_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(ULOGD_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(ULOGD_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(ULOGD_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(ULOGD_DIR) $(@D) ; \

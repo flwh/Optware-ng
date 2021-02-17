@@ -4,20 +4,11 @@
 #
 ###########################################################
 
-ifeq (5.20, $(PERL_MAJOR_VER))
-MICROPERL_VERSION=5.20.1
-MICROPERL_IPK_VERSION=1
-MICROPERL_PATCHES=$(MICROPERL_SOURCE_DIR)/5.20/0001-Fix-build-failure-for-microperl.patch \
-	$(MICROPERL_SOURCE_DIR)/5.20/0002-Makefile.micro-clean-ugenerate_uudmap.o.patch \
-	$(MICROPERL_SOURCE_DIR)/5.20/0003-Include-float.h-for-microperl.patch \
-	$(MICROPERL_SOURCE_DIR)/5.20/0004-Avoid-double-definition-for-DBL_DIG.patch
-else ifeq (5.10, $(PERL_MAJOR_VER))
-MICROPERL_VERSION=5.10.0
-MICROPERL_IPK_VERSION=1
-else
-MICROPERL_VERSION=5.8.8
-MICROPERL_IPK_VERSION=11
-endif
+MICROPERL_VERSION=5.22.1
+MICROPERL_IPK_VERSION=2
+MICROPERL_PATCHES=$(MICROPERL_SOURCE_DIR)/5.22/0001-Fix-build-failure-for-microperl.patch \
+	$(MICROPERL_SOURCE_DIR)/5.22/0002-Makefile.micro-clean-ugenerate_uudmap.o.patch \
+	$(MICROPERL_SOURCE_DIR)/5.22/missing_includes.patch
 
 MICROPERL_DESCRIPTION=Microperl.
 MICROPERL_SOURCE=perl-$(MICROPERL_VERSION).tar.gz
@@ -33,12 +24,12 @@ MICROPERL_IPK=$(BUILD_DIR)/microperl_$(MICROPERL_VERSION)-$(MICROPERL_IPK_VERSIO
 
 $(MICROPERL_BUILD_DIR)/.configured: $(DL_DIR)/$(MICROPERL_SOURCE) $(MICROPERL_PATCHES) make/microperl.mk
 	rm -rf $(BUILD_DIR)/$(PERL_DIR) $(@D)
-	$(PERL_UNZIP) $(DL_DIR)/$(PERL_SOURCE) | tar -C $(BUILD_DIR) -xvf -
+	$(PERL_UNZIP) $(DL_DIR)/$(MICROPERL_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(MICROPERL_PATCHES)"; then \
 		cat $(MICROPERL_PATCHES) | \
 		$(PATCH) -d $(BUILD_DIR)/$(MICROPERL_DIR) -p1 ; \
 	fi
-	mv $(BUILD_DIR)/$(PERL_DIR) $(@D)
+	mv $(BUILD_DIR)/$(MICROPERL_DIR) $(@D)
 	touch $@
 
 microperl-unpack: $(MICROPERL_BUILD_DIR)/.configured
@@ -50,6 +41,10 @@ ifeq ($(PERL_MAJOR_VER), 5.10)
 		CC=$(HOSTCC) \
 		;
 else ifeq ($(PERL_MAJOR_VER),$(filter $(PERL_MAJOR_VER), 5.20))
+	$(MAKE) -C $(@D) -f Makefile.micro generate_uudmap ugenerate_uudmap \
+		CC=$(HOSTCC) \
+		;
+else ifeq ($(PERL_MAJOR_VER),$(filter $(PERL_MAJOR_VER), 5.22))
 	$(MAKE) -C $(@D) -f Makefile.micro generate_uudmap ugenerate_uudmap \
 		CC=$(HOSTCC) \
 		;

@@ -21,7 +21,7 @@
 #
 SAMBA_SITE=http://www.samba.org/samba/ftp/stable
 SAMBA_VERSION ?= 3.2.15
-SAMBA_IPK_VERSION ?= 7
+SAMBA_IPK_VERSION ?= 8
 SAMBA_SOURCE=samba-$(SAMBA_VERSION).tar.gz
 SAMBA_DIR=samba-$(SAMBA_VERSION)
 SAMBA_UNZIP=zcat
@@ -205,7 +205,7 @@ samba-source: $(DL_DIR)/$(SAMBA_SOURCE) $(SAMBA_PATCHES)
 # If the compilation of the package requires other packages to be staged
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
-$(SAMBA_BUILD_DIR)/.configured: $(DL_DIR)/$(SAMBA_SOURCE) $(SAMBA_PATCHES)
+$(SAMBA_BUILD_DIR)/.configured: $(DL_DIR)/$(SAMBA_SOURCE) $(SAMBA_PATCHES) make/samba.mk
 ifeq (openldap, $(filter openldap, $(PACKAGES)))
 	$(MAKE) openldap-stage 
 endif
@@ -284,6 +284,7 @@ samba-unpack: $(SAMBA_BUILD_DIR)/.configured
 #
 $(SAMBA_BUILD_DIR)/.built: $(SAMBA_BUILD_DIR)/.configured
 	rm -f $@
+	$(MAKE) -C $(@D) proto_exists
 	$(MAKE) -C $(@D)
 	touch $@
 

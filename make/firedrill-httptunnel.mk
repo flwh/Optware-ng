@@ -21,7 +21,7 @@
 # "NSLU2 Linux" other developers will feel free to edit.
 #
 FIREDRILL-HTTPTUNNEL_SITE=http://the-linux-academy.co.uk/downloads
-FIREDRILL-HTTPTUNNEL_VERSION=1.3.2
+FIREDRILL-HTTPTUNNEL_VERSION=1.4.0
 FIREDRILL-HTTPTUNNEL_UPSTREAM_SOURCE=httptunnel-$(FIREDRILL-HTTPTUNNEL_VERSION).tgz
 FIREDRILL-HTTPTUNNEL_SOURCE=firedrill-$(FIREDRILL-HTTPTUNNEL_UPSTREAM_SOURCE)
 FIREDRILL-HTTPTUNNEL_DIR=httptunnel
@@ -54,7 +54,7 @@ $(FIREDRILL-HTTPTUNNEL_SOURCE_DIR)/find_if.patch \
 # If the compilation of the package requires additional
 # compilation or linking flags, then list them here.
 #
-FIREDRILL-HTTPTUNNEL_CPPFLAGS=-I$(STAGING_INCLUDE_DIR)/openssl
+FIREDRILL-HTTPTUNNEL_CPPFLAGS=-I$(STAGING_INCLUDE_DIR)/openssl -std=c++98
 FIREDRILL-HTTPTUNNEL_LDFLAGS=-lcrypto
 
 #

@@ -20,7 +20,7 @@
 # from your name or email address.  If you leave MAINTAINER set to
 # "NSLU2 Linux" other developers will feel free to edit.
 #
-INFERNO_HG_REPO=https://inferno-os.googlecode.com/hg
+INFERNO_HG_REPO=http://inferno-os.googlecode.com/hg
 INFERNO_HG_DATE=20140630
 INFERNO_HG_REV=7ab390b860ca
 INFERNO_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/inferno
@@ -36,7 +36,7 @@ INFERNO_DEPENDS=
 INFERNO_SUGGESTS=
 INFERNO_CONFLICTS=
 
-INFERNO_IPK_VERSION=1
+INFERNO_IPK_VERSION=2
 
 #INFERNO_CONFFILES=
 
@@ -93,9 +93,10 @@ INFERNO-UTILS_IPK=$(BUILD_DIR)/inferno-utils_$(INFERNO_VERSION)-$(INFERNO_IPK_VE
 
 $(DL_DIR)/$(INFERNO_SOURCE):
 ifdef INFERNO_HG_REV
+	$(MAKE) py-mercurial-host-stage python27-host-stage
 	(cd $(BUILD_DIR); \
 		rm -rf $(INFERNO_DIR) && \
-		hg clone -r$(INFERNO_HG_REV) $(INFERNO_HG_REPO) $(INFERNO_DIR) && \
+		$(HOST_STAGING_PREFIX)/bin/python2.7  $(HOST_STAGING_PREFIX)/bin/hg-py2.7 clone -r$(INFERNO_HG_REV) $(INFERNO_HG_REPO) $(INFERNO_DIR) && \
 		tar -czf $@ \
 			--exclude .hg \
 			--exclude '*.dis' \
@@ -141,7 +142,7 @@ $(INFERNO_HOST_BUILD_DIR)/.built: host/.configured $(DL_DIR)/$(INFERNO_SOURCE) $
 
 inferno-host: $(INFERNO_HOST_BUILD_DIR)/.built
 
-$(INFERNO_BUILD_DIR)/.configured: $(INFERNO_HOST_BUILD_DIR)/.built $(INFERNO_PATCHES) #make/inferno.mk
+$(INFERNO_BUILD_DIR)/.configured: $(INFERNO_HOST_BUILD_DIR)/.built $(INFERNO_PATCHES) make/inferno.mk
 	rm -rf $(BUILD_DIR)/$(INFERNO_DIR) $(@D)
 	$(INFERNO_UNZIP) $(DL_DIR)/$(INFERNO_SOURCE) | tar -C $(BUILD_DIR) -xf -
 	if test -n "$(INFERNO_PATCHES)" ; \

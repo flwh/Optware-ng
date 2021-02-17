@@ -17,8 +17,12 @@ PHP_APACHE_DESCRIPTION=The php scripting language, built as an apache module
 PHP_APACHE_SECTION=net
 PHP_APACHE_PRIORITY=optional
 PHP_APACHE_DEPENDS=apache, php, libxml2, sqlite
+ifeq (openldap, $(filter openldap, $(PACKAGES)))
+PHP_APACHE_DEPENDS+=, cyrus-sasl-libs
+endif
 
-PHP_APACHE_VERSION:=$(shell sed -n -e 's/^PHP_VERSION *=//p' make/php.mk)
+include make/php.mk
+PHP_APACHE_VERSION=$(PHP_VERSION)
 
 #
 # PHP_APACHE_IPK_VERSION should be incremented when the ipk changes.
@@ -114,6 +118,7 @@ $(PHP_APACHE_BUILD_DIR)/.configured: $(PHP_HOST_CLI) $(PHP_APACHE_PATCHES) make/
 	$(MAKE) php-source apache-stage bzip2-stage gdbm-stage libcurl-stage libdb-stage libgd-stage libxml2-stage \
 		libxslt-stage openssl-stage mysql-stage postgresql-stage freetds-stage \
 		unixodbc-stage imap-stage libpng-stage libjpeg-stage libzip-stage icu-stage \
+		libpam-stage net-snmp-stage \
 		libgmp-stage sqlite-stage libmcrypt-stage libtool-stage libtool-host-stage
 ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
 	$(MAKE) libiconv-stage
@@ -175,6 +180,7 @@ endif
 		--with-config-file-scan-dir=$(TARGET_PREFIX)/etc/php.d \
 		--with-layout=GNU \
 		--disable-static \
+		--enable-maintainer-zts \
 		--disable-cgi \
 		--disable-cli \
 		--enable-bcmath=shared \
@@ -203,13 +209,14 @@ endif
 		--with-gdbm=$(STAGING_PREFIX) \
 		--with-gd=shared,$(STAGING_PREFIX) \
 		--with-imap=shared,$(STAGING_PREFIX) \
-		--with-mysql=shared,$(STAGING_PREFIX) \
+		--without-mysql \
 		--with-mysql-sock=/tmp/mysql.sock \
 		--with-mysqli=shared,$(STAGING_PREFIX)/bin/mysql_config \
 		--with-pgsql=shared,$(STAGING_PREFIX) \
 		--with-mssql=shared,$(STAGING_PREFIX) \
 		--with-unixODBC=shared,$(STAGING_PREFIX) \
 		--with-openssl=shared,$(STAGING_PREFIX) \
+		--with-snmp=shared,$(STAGING_PREFIX) \
 		--with-sqlite=shared,$(STAGING_PREFIX) \
 		--with-pdo-mysql=shared,$(STAGING_PREFIX) \
 		--with-pdo-pgsql=shared,$(STAGING_PREFIX) \

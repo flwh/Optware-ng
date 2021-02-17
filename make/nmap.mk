@@ -22,7 +22,7 @@ NMAP_CONFLICTS=
 #
 # NMAP_IPK_VERSION should be incremented when the ipk changes.
 #
-NMAP_IPK_VERSION=3
+NMAP_IPK_VERSION=5
 
 #
 # NMAP_CONFFILES should be a list of user-editable files
@@ -139,6 +139,9 @@ $(NMAP_BUILD_DIR)/.configured: $(DL_DIR)/$(NMAP_SOURCE) $(NMAP_PATCHES) make/nma
 		; \
 	)
 #	$(PATCH_LIBTOOL) $(@D)/libtool
+ifneq (, $(filter buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
+	sed -i -e '/HAVE_NET_RAW_H/s|^|//|' $(@D)/libdnet-stripped/include/config.h
+endif
 	touch $@
 
 nmap-unpack: $(NMAP_BUILD_DIR)/.configured

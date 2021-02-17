@@ -40,7 +40,7 @@ UNITS_DEPENDS=readline
 #
 # UNITS_IPK_VERSION should be incremented when the ipk changes.
 #
-UNITS_IPK_VERSION=1
+UNITS_IPK_VERSION=2
 
 #
 # UNITS_CONFFILES should be a list of user-editable files
@@ -184,7 +184,7 @@ $(UNITS_IPK_DIR)/CONTROL/control:
 #
 $(UNITS_IPK): $(UNITS_BUILD_DIR)/.built
 	rm -rf $(UNITS_IPK_DIR) $(BUILD_DIR)/units_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(UNITS_BUILD_DIR) DESTDIR=$(UNITS_IPK_DIR) install
+	$(MAKE) -C $(UNITS_BUILD_DIR) DESTDIR=$(UNITS_IPK_DIR) install -j1
 	$(STRIP_COMMAND) $(UNITS_IPK_DIR)$(TARGET_PREFIX)/bin/units
 	$(MAKE) $(UNITS_IPK_DIR)/CONTROL/control
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(UNITS_IPK_DIR)

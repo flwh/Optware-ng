@@ -29,14 +29,14 @@ YOUGRABBER_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 YOUGRABBER_DESCRIPTION=YouGrabber is a lightweight, multi-threaded (NPTL based) command line YouTube.com video downloader.
 YOUGRABBER_SECTION=misc
 YOUGRABBER_PRIORITY=optional
-YOUGRABBER_DEPENDS=glib, libcurl, ncurses, libtinfo, openssl
+YOUGRABBER_DEPENDS=glib, libcurl, ncurses, openssl
 YOUGRABBER_SUGGESTS=
 YOUGRABBER_CONFLICTS=
 
 #
 # YOUGRABBER_IPK_VERSION should be incremented when the ipk changes.
 #
-YOUGRABBER_IPK_VERSION=2
+YOUGRABBER_IPK_VERSION=6
 
 #
 # YOUGRABBER_CONFFILES should be a list of user-editable files
@@ -46,7 +46,8 @@ YOUGRABBER_IPK_VERSION=2
 # YOUGRABBER_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-#YOUGRABBER_PATCHES=$(YOUGRABBER_SOURCE_DIR)/configure.patch
+YOUGRABBER_PATCHES=\
+$(YOUGRABBER_SOURCE_DIR)/Makefile.patch \
 
 #
 # If the compilation of the package requires additional
@@ -110,7 +111,7 @@ $(YOUGRABBER_BUILD_DIR)/.configured: $(DL_DIR)/$(YOUGRABBER_SOURCE) $(YOUGRABBER
 	$(YOUGRABBER_UNZIP) $(DL_DIR)/$(YOUGRABBER_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(YOUGRABBER_PATCHES)" ; \
 		then cat $(YOUGRABBER_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(YOUGRABBER_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(YOUGRABBER_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(YOUGRABBER_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(YOUGRABBER_DIR) $(@D) ; \
@@ -143,7 +144,6 @@ $(YOUGRABBER_BUILD_DIR)/.built: $(YOUGRABBER_BUILD_DIR)/.configured
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(YOUGRABBER_CPPFLAGS)" \
 		LDFLAGS="$(STAGING_LDFLAGS) $(YOUGRABBER_LDFLAGS)" \
-		LIBS='-lm -lpthread -lncurses -ltinfo `pkg-config --libs glib-2.0` `curl-config --libs`' \
 		;
 	touch $@
 

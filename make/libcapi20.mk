@@ -46,7 +46,7 @@ LIBCAPI20_IPK_VERSION=1
 # If the compilation of the package requires additional
 # compilation or linking flags, then list them here.
 #
-LIBCAPI20_CPPFLAGS=
+LIBCAPI20_CPPFLAGS=-D__user=''
 LIBCAPI20_LDFLAGS=
 
 #
@@ -95,7 +95,7 @@ libcapi20-source: $(DL_DIR)/$(LIBCAPI20_SOURCE) $(LIBCAPI20_PATCHES)
 # If the compilation of the package requires other packages to be staged
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
-$(LIBCAPI20_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBCAPI20_SOURCE) $(LIBCAPI20_PATCHES)
+$(LIBCAPI20_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBCAPI20_SOURCE) $(LIBCAPI20_PATCHES) make/libcapi20.mk
 	$(MAKE) zlib-stage
 	rm -rf $(BUILD_DIR)/$(LIBCAPI20_DIR) $(@D)
 	$(LIBCAPI20_UNZIP) $(DL_DIR)/$(LIBCAPI20_SOURCE) | tar -C $(BUILD_DIR) -xvf -
@@ -180,7 +180,7 @@ $(LIBCAPI20_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 $(LIBCAPI20_IPK): $(LIBCAPI20_BUILD_DIR)/.built
-	rm -rf $(LIBCAPI20_IPK_DIR) $(LIBCAPI20_IPK)
+	rm -rf $(LIBCAPI20_IPK_DIR) $(BUILD_DIR)/libcapi20_*_$(TARGET_ARCH).ipk
 	$(INSTALL) -d $(LIBCAPI20_IPK_DIR)$(TARGET_PREFIX)
 	$(MAKE) -C $(LIBCAPI20_BUILD_DIR) prefix=$(LIBCAPI20_IPK_DIR)$(TARGET_PREFIX) install-strip
 	rm -f $(LIBCAPI20_IPK_DIR)$(TARGET_PREFIX)/lib/*.la

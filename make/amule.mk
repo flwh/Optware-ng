@@ -22,24 +22,25 @@
 # http://developer.berlios.de/projects/amule/
 
 #AMULE_SITE=http://download.berlios.de/amule
-AMULE_VERSION=2.3.1rc1
+AMULE_VERSION=2.3.2
+AMULE_VERSION_REAL=2.3.2
 #AMULE_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/amule
-AMULE_SITE=http://$(SOURCEFORGE_MIRROR)/project/amule/aMule/$(AMULE_VERSION)
-AMULE_SOURCE=aMule-$(AMULE_VERSION).tar.bz2
-AMULE_DIR=aMule-$(AMULE_VERSION)
+AMULE_SITE=http://$(SOURCEFORGE_MIRROR)/project/amule/aMule/$(AMULE_VERSION_REAL)
+AMULE_SOURCE=aMule-$(AMULE_VERSION_REAL).tar.bz2
+AMULE_DIR=aMule-$(AMULE_VERSION_REAL)
 AMULE_UNZIP=bzcat
 AMULE_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 AMULE_DESCRIPTION=non-gui part of aMule ed2k client (amuled,amulweb,amulecmd) 
 AMULE_SECTION=net
 AMULE_PRIORITY=optional
-AMULE_DEPENDS=libstdc++, wxbase, zlib, libcurl, libpng, libgd, libupnp, readline, ncurses
+AMULE_DEPENDS=libstdc++, wxbase, zlib, libpng, libupnp, readline, ncurses
 AMULE_SUGGESTS=
 AMULE_CONFLICTS=
 
 #
 # AMULE_IPK_VERSION should be incremented when the ipk changes.
 #
-AMULE_IPK_VERSION=2
+AMULE_IPK_VERSION=4
 
 #
 # AMULE_CONFFILES should be a list of user-editable files
@@ -49,7 +50,9 @@ AMULE_IPK_VERSION=2
 # AMULE_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-AMULE_PATCHES=#$(AMULE_SOURCE_DIR)/uintptr_t.patch \
+AMULE_PATCHES=\
+$(AMULE_SOURCE_DIR)/libupnp1.8.patch \
+#$(AMULE_SOURCE_DIR)/uintptr_t.patch \
 #$(AMULE_SOURCE_DIR)/libupnp-cross.patch
 
 ifeq ($(LIBC_STYLE), uclibc)
@@ -60,11 +63,11 @@ endif
 # If the compilation of the package requires additional
 # compilation or linking flags, then list them here.
 #
-AMULE_CPPFLAGS=
+AMULE_CPPFLAGS=-pthread -I$(STAGING_INCLUDE_DIR)/upnp -DENABLE_UPNP=1
 ifeq ($(OPTWARE_TARGET), ts101)
 AMULE_CPPFLAGS+= -fno-builtin-log -fno-builtin-exp
 endif
-AMULE_LDFLAGS=
+AMULE_LDFLAGS=-pthread -lupnp -lixml
 AMULE_CONFIGURE_OPTS = ac_cv_func_malloc_0_nonnull=yes ac_cv_func_realloc_0_nonnull=yes
 ifeq ($(LIBC_STYLE), uclibc)
 ifdef TARGET_GXX
@@ -90,7 +93,6 @@ AMULE_CONFIGURE_ARGS = \
 		--disable-cas \
 		--disable-wxcas \
 		--disable-systray \
-		--with-curl-config=$(STAGING_DIR)/bin/curl-config \
 		--with-gdlib-prefix=$(STAGING_PREFIX) \
 		--with-libpng-prefix=$(STAGING_PREFIX) \
 		--with-libupnp-prefix=$(STAGING_PREFIX) \
@@ -152,9 +154,9 @@ amule-source: $(DL_DIR)/$(AMULE_SOURCE) $(AMULE_PATCHES)
 # shown below to make various patches to it.
 #
 #
-$(AMULE_BUILD_DIR)/.configured: $(DL_DIR)/$(AMULE_SOURCE) $(AMULE_PATCHES)
-	$(MAKE) libstdc++-stage crypto++-stage ncurses-stage
-	$(MAKE) wxbase-stage libcurl-stage zlib-stage libpng-stage libgd-stage libupnp-stage readline-stage
+$(AMULE_BUILD_DIR)/.configured: $(DL_DIR)/$(AMULE_SOURCE) $(AMULE_PATCHES) make/amule.mk
+	$(MAKE) libstdc++-stage crypto++-stage ncurses-stage \
+		wxbase-stage zlib-stage libpng-stage libupnp-stage readline-stage
 	rm -rf $(BUILD_DIR)/$(AMULE_DIR) $(@D)
 	$(AMULE_UNZIP) $(DL_DIR)/$(AMULE_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(AMULE_PATCHES)" ; \

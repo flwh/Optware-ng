@@ -24,7 +24,13 @@ MPD_SITE=http://www.musicpd.org/download/mpd/$(shell echo $(MPD_VERSION)|cut -d 
 #MPD_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/musicpd
 #MPD_SVN_REPO=https://svn.musicpd.org/mpd/trunk
 #MPD_SVN_REV=5324
-MPD_VERSION?=0.17.6
+ifeq (, $(filter buildroot-armv5eabi-ng buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
+# All except ARMv5
+MPD_VERSION=0.20.15
+else
+# ARMv5
+MPD_VERSION=0.19.13
+endif
 MPD_SOURCE=mpd-$(MPD_VERSION).tar.xz
 MPD_DIR=mpd-$(MPD_VERSION)
 MPD_UNZIP=xzcat
@@ -32,7 +38,7 @@ MPD_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 MPD_DESCRIPTION=Music Player Daemon (MPD) allows remote access for playing music.
 MPD_SECTION=audio
 MPD_PRIORITY=optional
-MPD_DEPENDS=audiofile, faad2, ffmpeg, flac, glib, lame, libao, libcurl, icu
+MPD_DEPENDS=audiofile, faad2, ffmpeg, flac, glib, lame, libao, libcurl, icu, alsa-lib
 MPD_DEPENDS+=, libid3tag, libmad, libmms, libmpcdec, libshout, wavpack, audiofile
 MPD_DEPENDS+=, psmisc
 MPD_DEPENDS+=, zlib, expat
@@ -42,15 +48,22 @@ else
 MPD_DEPENDS+=, libvorbisidec
 endif
 ifeq (avahi, $(filter avahi, $(PACKAGES)))
-MPD_DEPENDS+=, avahi
+MPD_DEPENDS+=, libavahi-client, libavahi-common
 endif
+MPD_DEPENDS+=, libupnp, libmpdclient, mpg123, libsndfile, sqlite
 MPD_SUGGESTS=
 MPD_CONFLICTS=
 
 #
 # MPD_IPK_VERSION should be incremented when the ipk changes.
 #
-MPD_IPK_VERSION?=1
+ifeq (, $(filter buildroot-armv5eabi-ng buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
+# All except ARMv5
+MPD_IPK_VERSION=1
+else
+# ARMv5
+MPD_IPK_VERSION=6
+endif
 
 #
 # MPD_CONFFILES should be a list of user-editable files
@@ -60,7 +73,17 @@ MPD_IPK_VERSION?=1
 # MPD_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-# MPD_PATCHES=$(MPD_SOURCE_DIR)/flac-1.1.3.patch
+ifeq (, $(filter buildroot-armv5eabi-ng buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
+# All except ARMv5
+MPD_PATCHES=\
+#$(MPD_SOURCE_DIR)/fix_build_with_no_ioprio_set_syscall.patch
+else
+# ARMv5
+MPD_PATCHES=\
+$(MPD_SOURCE_DIR)/0.19.13.fix_build_with_no_ioprio_set_syscall.patch \
+$(MPD_SOURCE_DIR)/0.19.13.DecodeBuffer.hxx.patch \
+$(MPD_SOURCE_DIR)/0.19.13.libupnp-1.8.patch
+endif
 
 #
 # If the compilation of the package requires additional
@@ -155,8 +178,9 @@ endif
 	$(MAKE) faad2-stage ffmpeg-stage flac-stage lame-stage \
 	glib-stage libcurl-stage libmms-stage icu-stage \
 	audiofile-stage libao-stage libid3tag-stage \
-	libmad-stage libmpcdec-stage libshout-stage \
-	wavpack-stage audiofile-stage expat-stage boost-stage
+	libmad-stage libmpcdec-stage libshout-stage alsa-lib-stage \
+	wavpack-stage audiofile-stage expat-stage boost-stage \
+	libupnp-stage libmpdclient-stage mpg123-stage libsndfile-stage sqlite-stage
 ifneq (, $(filter i686, $(TARGET_ARCH)))
 	$(MAKE) libsamplerate-stage libvorbis-stage
 else
@@ -166,17 +190,21 @@ endif
 	$(MPD_UNZIP) $(DL_DIR)/$(MPD_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(MPD_PATCHES)" ; \
 		then cat $(MPD_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(MPD_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(MPD_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(MPD_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(MPD_DIR) $(@D) ; \
 	fi
 #	sed -i -e '/LIBFLAC_LIBS="$$LIBFLAC_LIBS/s|-lFLAC|-lFLAC -logg|' $(@D)/configure
+ifneq (, $(filter buildroot-armv5eabi-ng buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
+# ARMv5
+	$(AUTORECONF1.15) -vif $(@D)
+endif
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(MPD_CPPFLAGS)" \
 		LDFLAGS="$(STAGING_LDFLAGS) $(MPD_LDFLAGS)" \
-		PKG_CONFIG_LIBDIR=$(STAGING_LIB_DIR)/pkgconfig \
+		PKG_CONFIG_PATH=$(STAGING_LIB_DIR)/pkgconfig \
 		SHOUT_LIBS="$(STAGING_LDFLAGS) -lshout -lspeex" \
 		ICU_CFLAGS="$(STAGING_CPPFLAGS)" \
 		ICU_LIBS="$(STAGING_LDFLAGS) -licuuc -licui18n" \
@@ -192,7 +220,7 @@ endif
 		--target=$(GNU_TARGET_NAME) \
 		--prefix=$(TARGET_PREFIX) \
 		\
-		--disable-alsa \
+		--enable-alsa \
 		--enable-aac \
 		--enable-ao \
 		--enable-audiofile \
@@ -206,7 +234,9 @@ endif
 		--enable-wavpack \
 		--enable-expat \
 		$(MPD_CONFIGURE_OPTIONS) \
-		\
+		--disable-eventfd \
+		--disable-epoll \
+		--disable-signalfd \
 		--with-faad=$(STAGING_PREFIX) \
 		--with-lame=$(STAGING_PREFIX) \
 	)

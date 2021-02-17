@@ -37,7 +37,7 @@ MOD_PYTHON_CONFLICTS=
 #
 # MOD_PYTHON_IPK_VERSION should be incremented when the ipk changes.
 #
-MOD_PYTHON_IPK_VERSION=2
+MOD_PYTHON_IPK_VERSION=3
 
 #
 # MOD_PYTHON_CONFFILES should be a list of user-editable files
@@ -137,7 +137,7 @@ $(MOD_PYTHON_BUILD_DIR)/.configured: $(DL_DIR)/$(MOD_PYTHON_SOURCE) $(MOD_PYTHON
                 echo "[install]"; \
                 echo "prefix=$(TARGET_PREFIX)"; \
         ) > $(@D)/dist/setup.cfg
-	sed -i -e 's|\(-[IL]\)$(TARGET_PREFIX)|\1$(STAGING_PREFIX)|' $(@D)/src/Makefile
+	sed -i -e 's|\(-[IL]\)/opt|\1$(STAGING_PREFIX)|' $(@D)/src/Makefile
 	touch $@
 
 mod-python-unpack: $(MOD_PYTHON_BUILD_DIR)/.configured

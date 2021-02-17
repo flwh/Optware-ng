@@ -27,7 +27,7 @@
 # "NSLU2 Linux" other developers will feel free to edit.
 #
 LIBUPNP_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/pupnp
-LIBUPNP_VERSION=1.6.6
+LIBUPNP_VERSION=1.8.3
 LIBUPNP_SOURCE=libupnp-$(LIBUPNP_VERSION).tar.bz2
 LIBUPNP_DIR=libupnp-$(LIBUPNP_VERSION)
 LIBUPNP_UNZIP=bzcat
@@ -36,7 +36,7 @@ LIBUPNP_DESCRIPTION=The Universal Plug and Play (UPnP) SDK for Linux provides su
 LIBUPNP_SECTION=libs
 LIBUPNP_PRIORITY=optional
 LIBUPNP_DEPENDS=
-LIBUPNP_SUGGESTS=ushare
+LIBUPNP_SUGGESTS=
 LIBUPNP_CONFLICTS=
 
 #
@@ -52,13 +52,14 @@ LIBUPNP_IPK_VERSION=1
 # LIBUPNP_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-#LIBUPNP_PATCHES=$(LIBUPNP_SOURCE_DIR)/configure.patch
+LIBUPNP_PATCHES=\
+#$(LIBUPNP_SOURCE_DIR)/get_content_type_static_inline.patch \
 
 #
 # If the compilation of the package requires additional
 # compilation or linking flags, then list them here.
 #
-LIBUPNP_CPPFLAGS=
+LIBUPNP_CPPFLAGS=-D_FILE_OFFSET_BITS=64
 LIBUPNP_LDFLAGS=
 
 #
@@ -116,7 +117,7 @@ $(LIBUPNP_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBUPNP_SOURCE) $(LIBUPNP_PATCHES)
 	$(LIBUPNP_UNZIP) $(DL_DIR)/$(LIBUPNP_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(LIBUPNP_PATCHES)" ; \
 		then cat $(LIBUPNP_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(LIBUPNP_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(LIBUPNP_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(LIBUPNP_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(LIBUPNP_DIR) $(@D) ; \
@@ -207,6 +208,7 @@ $(LIBUPNP_IPK): $(LIBUPNP_BUILD_DIR)/.built
 #	$(INSTALL) -m 755 $(LIBUPNP_SOURCE_DIR)/prerm $(LIBUPNP_IPK_DIR)/CONTROL/prerm
 #	echo $(LIBUPNP_CONFFILES) | sed -e 's/ /\n/g' > $(LIBUPNP_IPK_DIR)/CONTROL/conffiles
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(LIBUPNP_IPK_DIR)
+	$(WHAT_TO_DO_WITH_IPK_DIR) $(LIBUPNP_IPK_DIR)
 
 #
 # This is called from the top level makefile to create the IPK file.

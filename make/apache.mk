@@ -14,7 +14,7 @@
 # It is usually "zcat" (for .gz) or "bzcat" (for .bz2)
 #
 APACHE_SITE=http://archive.apache.org/dist/httpd
-APACHE_VERSION=2.4.16
+APACHE_VERSION=2.4.37
 APACHE_SOURCE=httpd-$(APACHE_VERSION).tar.bz2
 APACHE_DIR=httpd-$(APACHE_VERSION)
 APACHE_UNZIP=bzcat
@@ -191,7 +191,7 @@ $(APACHE_BUILD_DIR)/.configured: $(DL_DIR)/$(APACHE_SOURCE) $(APACHE_PATCHES) ma
 		--prefix=$(TARGET_PREFIX) \
 		--enable-layout=GNU \
 		--with-mpm=$(APACHE_MPM) \
-		--enable-mods-shared=all \
+		--enable-mods-shared=reallyall \
 		--enable-ssl \
 		--enable-proxy \
 		--enable-cache \
@@ -257,24 +257,18 @@ $(APACHE_IPK) $(APACHE_MANUAL_IPK): $(APACHE_BUILD_DIR)/.built
 	$(MAKE) -C $(APACHE_BUILD_DIR) DESTDIR=$(APACHE_IPK_DIR) installbuilddir=$(TARGET_PREFIX)/share/apache2/build install
 	rm -rf $(APACHE_IPK_DIR)$(TARGET_PREFIX)/share/apache2/manual
 	mv -f $(APACHE_IPK_DIR)$(TARGET_PREFIX)/bin/* $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/
-#	$(TARGET_STRIP) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/libexec/*.so
-#	$(TARGET_STRIP) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/ab
-#	$(TARGET_STRIP) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/checkgid
-#	$(TARGET_STRIP) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/htcacheclean
-#	$(TARGET_STRIP) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/htdbm
-#	$(TARGET_STRIP) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/htdigest
-#	$(TARGET_STRIP) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/htpasswd
-#	$(TARGET_STRIP) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/httxt2dbm
-#	$(TARGET_STRIP) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/httpd
-#	$(TARGET_STRIP) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/logresolve
-#	$(TARGET_STRIP) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/rotatelogs
-#	$(TARGET_STRIP) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/fcgistarter
+	cd $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/; $(STRIP_COMMAND) ab htpasswd httpd checkgid \
+			fcgistarter htcacheclean htdbm htdigest httxt2dbm logresolve rotatelogs
+	$(STRIP_COMMAND) $(APACHE_IPK_DIR)$(TARGET_PREFIX)/libexec/*.so
 	mv $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/httpd $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/apache-httpd
 	mv $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/htpasswd $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/apache-htpasswd
 	rm -f $(APACHE_IPK_DIR)$(TARGET_PREFIX)/man/man1/htpasswd.1
 	sed -i -e "s%$(STAGING_DIR)%%" $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/apxs
 	sed -i -e "s%^#!.*perl%#!$(TARGET_PREFIX)/bin/perl%" $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/apxs
 	sed -i -e "s%^#!.*perl%#!$(TARGET_PREFIX)/bin/perl%" $(APACHE_IPK_DIR)$(TARGET_PREFIX)/sbin/dbmmanage
+	sed -i -e '/LoadModule slotmem_shm_module\|LoadModule ssl_module/s/^#//' \
+		$(APACHE_IPK_DIR)$(TARGET_PREFIX)/etc/apache2/httpd.conf \
+		$(APACHE_IPK_DIR)$(TARGET_PREFIX)/etc/apache2/original/httpd.conf
 	$(INSTALL) -d $(APACHE_IPK_DIR)$(TARGET_PREFIX)/etc/apache2/conf.d
 	$(INSTALL) -d $(APACHE_IPK_DIR)$(TARGET_PREFIX)/etc/init.d
 	$(INSTALL) -m 755 $(APACHE_SOURCE_DIR)/rc.apache $(APACHE_IPK_DIR)$(TARGET_PREFIX)/etc/init.d/S80apache

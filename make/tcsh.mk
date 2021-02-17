@@ -21,7 +21,7 @@
 # "NSLU2 Linux" other developers will feel free to edit.
 #
 TCSH_SITE=ftp://ftp.astron.com/pub/tcsh
-TCSH_VERSION=6.17.00
+TCSH_VERSION=6.20.00
 TCSH_SOURCE=tcsh-$(TCSH_VERSION).tar.gz
 TCSH_DIR=tcsh-$(TCSH_VERSION)
 TCSH_UNZIP=zcat
@@ -149,7 +149,8 @@ tcsh-unpack: $(TCSH_BUILD_DIR)/.configured
 $(TCSH_BUILD_DIR)/.built: $(TCSH_BUILD_DIR)/.configured
 	rm -f $@
 	$(MAKE) -C $(@D) gethost \
-		CC=$(HOSTCC) LDFLAGS="" EXTRALIBS=""
+		CC=$(HOSTCC) LDFLAGS="" EXTRALIBS="" \
+		DFLAGS='-pipe -O2 -D_PATH_TCSHELL="\"$(TARGET_PREFIX)/bin/tcsh\""'
 	$(MAKE) -C $(@D)
 	touch $@
 

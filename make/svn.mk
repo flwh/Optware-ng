@@ -27,7 +27,7 @@
 # "NSLU2 Linux" other developers will feel free to edit.
 #
 SVN_SITE=http://archive.apache.org/dist/subversion/
-SVN_VERSION=1.8.13
+SVN_VERSION=1.9.4
 SVN_SOURCE=subversion-$(SVN_VERSION).tar.bz2
 SVN_DIR=subversion-$(SVN_VERSION)
 SVN_UNZIP=bzcat
@@ -35,7 +35,7 @@ SVN_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 SVN_DESCRIPTION=a compelling replacement for CVS
 SVN_SECTION=net
 SVN_PRIORITY=optional
-SVN_DEPENDS=neon, apr, apr-util, cyrus-sasl-libs, e2fslibs, expat, file, gdbm, libxml2, sqlite, zlib
+SVN_DEPENDS=libserf, apr, apr-util, cyrus-sasl-libs, e2fslibs, expat, file, gdbm, libxml2, sqlite, zlib, libintl
 ifeq (openldap, $(filter openldap, $(PACKAGES)))
 SVN_DEPENDS +=, openldap-libs
 endif
@@ -63,7 +63,7 @@ SVN-RB_CONFLICTS=
 #
 # SVN_IPK_VERSION should be incremented when the ipk changes.
 #
-SVN_IPK_VERSION=1
+SVN_IPK_VERSION=5
 
 #
 # SVN_CONFFILES should be a list of user-editable files
@@ -79,8 +79,8 @@ SVN_CONFFILES=
 # If the compilation of the package requires additional
 # compilation or linking flags, then list them here.
 #
-SVN_CPPFLAGS=-I$(STAGING_INCLUDE_DIR)/neon -D_LARGEFILE64_SOURCE
-SVN_LDFLAGS=
+SVN_CPPFLAGS=-D_LARGEFILE64_SOURCE
+SVN_LDFLAGS=-lintl
 ifeq ($(TARGET_CC), $(HOSTCC))
 SVN_CONFIG_ENV=
 else
@@ -151,9 +151,9 @@ svn-source: $(DL_DIR)/$(SVN_SOURCE) $(SVN_PATCHES)
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
 $(SVN_BUILD_DIR)/.configured: $(DL_DIR)/$(SVN_SOURCE) $(SVN_PATCHES) make/svn.mk
-	$(MAKE) apr-stage apr-util-stage apache-stage neon-stage \
+	$(MAKE) apr-stage apr-util-stage apache-stage gettext-stage \
 		cyrus-sasl-stage expat-stage file-stage libxml2-stage \
-		e2fsprogs-stage gdbm-stage sqlite-stage zlib-stage
+		e2fsprogs-stage gdbm-stage sqlite-stage zlib-stage libserf-stage
 ifeq (openldap, $(filter openldap, $(PACKAGES)))
 	$(MAKE) openldap-stage
 endif
@@ -179,14 +179,15 @@ endif
 		PYTHON=$(HOST_STAGING_PREFIX)/bin/python2.7 \
 		RUBY=$(HOST_STAGING_PREFIX)/bin/ruby \
 		$(SVN_CONFIG_ENV) \
+		PKG_CONFIG_PATH=$(STAGING_LIB_DIR)/pkgconfig \
 		./configure \
 		--build=$(GNU_HOST_NAME) \
 		--host=$(GNU_TARGET_NAME) \
 		--target=$(GNU_TARGET_NAME) \
 		--prefix=$(TARGET_PREFIX) \
-		--with-neon=$(STAGING_PREFIX) \
+		--with-serf=$(STAGING_PREFIX) \
 		--with-apr=$(STAGING_PREFIX) \
-		--with-ruby-sitedir=$(TARGET_PREFIX)/local/lib/ruby/site_ruby/$(RUBY_VERSION) \
+		--with-ruby-sitedir=$(TARGET_PREFIX)/local/lib/ruby/site_ruby/$(RUBY_LIB_VERSION) \
 		--with-apr-util=$(STAGING_PREFIX) \
 		--with-apxs=$(STAGING_PREFIX)/bin/apxs \
 		--without-swig \
@@ -201,9 +202,9 @@ endif
 	    -e '/^SWIG_PY_LIBS/s|.*|SWIG_PY_LIBS = $(STAGING_LDFLAGS) $(SVN_LDFLAGS)|' \
 	    -e '/^SWIG_PY_LINK/s|.*|SWIG_PY_LINK = $(TARGET_CC) -pthread -shared|' \
 	    -e '/^SWIG_RB/s|= *gcc|= $(TARGET_CC)|' \
-	    -e '/^SWIG_RB_INCLUDES/s|.*|SWIG_RB_INCLUDES =  \$$(SWIG_INCLUDES) -I. -I$(STAGING_INCLUDE_DIR)/ruby-$(RUBY_VERSION) -I$(STAGING_INCLUDE_DIR)/ruby-$(RUBY_VERSION)/ruby -I$(STAGING_INCLUDE_DIR)/ruby-$(RUBY_VERSION)/ruby/backward -I$(shell ls -d $(STAGING_INCLUDE_DIR)/ruby-$(RUBY_VERSION)/*|grep "\-linux"|head -n 1) -I\$$(SWIG_SRC_DIR)/ruby/libsvn_swig_ruby|' \
+	    -e '/^SWIG_RB_INCLUDES/s|.*|SWIG_RB_INCLUDES =  \$$(SWIG_INCLUDES) -I. -I$(STAGING_INCLUDE_DIR)/ruby-$(RUBY_LIB_VERSION) -I$(STAGING_INCLUDE_DIR)/ruby-$(RUBY_LIB_VERSION)/ruby -I$(STAGING_INCLUDE_DIR)/ruby-$(RUBY_LIB_VERSION)/ruby/backward -I$(shell ls -d $(STAGING_INCLUDE_DIR)/ruby-$(RUBY_LIB_VERSION)/*|grep "\-linux"|head -n 1) -I\$$(SWIG_SRC_DIR)/ruby/libsvn_swig_ruby|' \
 	    -e '/^SWIG_RB_LIBS/s|.*|SWIG_RB_LIBS = -Wl,-R$(TARGET_PREFIX)/lib -L$(STAGING_LIB_DIR) -lruby -lpthread -ldl -lcrypt -lm|' \
-	    -e '/^SWIG_RB_SITE_ARCH_DIR/s|.*|SWIG_RB_SITE_ARCH_DIR = /$(shell cd $(STAGING_DIR); ls -d opt/local/lib/ruby/site_ruby/$(RUBY_VERSION)/*|grep "\-linux"|head -n 1)|' \
+	    -e '/^SWIG_RB_SITE_ARCH_DIR/s|.*|SWIG_RB_SITE_ARCH_DIR = $(TARGET_PREFIX)/local/lib/ruby/site_ruby/$(RUBY_LIB_VERSION)/$(RUBY_ARCH)|' \
 	    -e 's|-L$(TARGET_PREFIX)/lib||g' \
 	    -e '/^SVN_APRUTIL_LIBS/s/=/= -lpthread /' \
 	    $(@D)/Makefile
@@ -222,7 +223,7 @@ svn-unpack: $(SVN_BUILD_DIR)/.configured
 #
 $(SVN_BUILD_DIR)/.built: $(SVN_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(@D) NEON_LIBS=-lneon
+	$(MAKE) -C $(@D)
 	touch $@
 
 $(SVN_BUILD_DIR)/.py-built: $(SVN_BUILD_DIR)/.built
@@ -278,7 +279,7 @@ svn: $(SVN_BUILD_DIR)/.built $(SVN_BUILD_DIR)/.py-built $(SVN_BUILD_DIR)/.rb-bui
 #
 $(SVN_BUILD_DIR)/.staged: $(SVN_BUILD_DIR)/.built
 	rm -f $@
-	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) local-install
+	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) local-install -j1
 	touch $@
 
 svn-stage: $(SVN_BUILD_DIR)/.staged
@@ -369,7 +370,7 @@ endif
 	rm -rf $(SVN_IPK_DIR) $(BUILD_DIR)/svn_*_$(TARGET_ARCH).ipk
 	$(INSTALL) -d $(SVN_IPK_DIR)$(TARGET_PREFIX)/lib/svn-python/libsvn
 	$(MAKE) -C $(SVN_BUILD_DIR) DESTDIR=$(SVN_IPK_DIR) \
-		local-install $(SVN_INSTALL_SWIG_TARGETS)
+		local-install $(SVN_INSTALL_SWIG_TARGETS) -j1
 	$(STRIP_COMMAND) $(SVN_IPK_DIR)$(TARGET_PREFIX)/bin/*
 	for f in `find $(SVN_IPK_DIR)$(TARGET_PREFIX) -name '*.so'`; do \
 		chmod +w $$f; \

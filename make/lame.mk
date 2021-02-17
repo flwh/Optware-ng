@@ -21,7 +21,7 @@
 #
 LAME_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/lame
 LAME_VERSION?=3.99.5
-LAME_IPK_VERSION?=2
+LAME_IPK_VERSION?=3
 LAME_SOURCE=lame-$(LAME_VERSION).tar.gz
 LAME_DIR=lame-$(LAME_VERSION)
 LAME_UNZIP=zcat
@@ -116,6 +116,10 @@ $(LAME_BUILD_DIR)/.configured: $(DL_DIR)/$(LAME_SOURCE) $(LAME_PATCHES) make/lam
 	mv $(BUILD_DIR)/$(LAME_DIR) $(@D)
 ifeq ($(LAME_VERSION), 3.99.5)
 	$(AUTORECONF1.14) -vif $(@D)
+endif
+ifeq ($(OPTWARE_TARGET), $(filter ct-ng-ppc-e500v2, $(OPTWARE_TARGET)))
+	# doesn't build with -O3
+	sed -i -e 's/-O3/-O2/g' $(@D)/configure
 endif
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \

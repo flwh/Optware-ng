@@ -20,7 +20,7 @@
 # You should change all these variables to suit your package.
 #
 LIBVORBIS_SITE=http://downloads.xiph.org/releases/vorbis
-LIBVORBIS_VERSION=1.3.2
+LIBVORBIS_VERSION=1.3.5
 LIBVORBIS_SOURCE=libvorbis-$(LIBVORBIS_VERSION).tar.gz
 LIBVORBIS_DIR=libvorbis-$(LIBVORBIS_VERSION)
 LIBVORBIS_UNZIP=zcat
@@ -35,7 +35,7 @@ LIBVORBIS_CONFLICTS=
 #
 # LIBVORBIS_IPK_VERSION should be incremented when the ipk changes.
 #
-LIBVORBIS_IPK_VERSION=1
+LIBVORBIS_IPK_VERSION=2
 
 #
 # LIBVORBIS_CONFFILES should be a list of user-editable files
@@ -45,7 +45,7 @@ LIBVORBIS_IPK_VERSION=1
 # LIBVORBIS_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-#LIBVORBIS_PATCHES=$(LIBVORBIS_SOURCE_DIR)/configure.patch
+LIBVORBIS_PATCHES=$(LIBVORBIS_SOURCE_DIR)/libtool.patch
 
 #
 # If the compilation of the package requires additional
@@ -111,7 +111,7 @@ $(LIBVORBIS_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBVORBIS_SOURCE) $(LIBVORBIS_PA
 	$(LIBVORBIS_UNZIP) $(DL_DIR)/$(LIBVORBIS_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(LIBVORBIS_PATCHES)" ; \
 		then cat $(LIBVORBIS_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(LIBVORBIS_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(LIBVORBIS_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(LIBVORBIS_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(LIBVORBIS_DIR) $(@D) ; \

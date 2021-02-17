@@ -36,7 +36,7 @@ ENSCRIPT_CONFLICTS=
 #
 # ENSCRIPT_IPK_VERSION should be incremented when the ipk changes.
 #
-ENSCRIPT_IPK_VERSION=1
+ENSCRIPT_IPK_VERSION=2
 
 #
 # ENSCRIPT_CONFFILES should be a list of user-editable files
@@ -46,8 +46,7 @@ ENSCRIPT_IPK_VERSION=1
 # ENSCRIPT_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-ENSCRIPT_PATCHES=$(ENSCRIPT_SOURCE_DIR)/configure.patch \
-$(ENSCRIPT_SOURCE_DIR)/patch-afm_Makefile.in \
+ENSCRIPT_PATCHES=$(ENSCRIPT_SOURCE_DIR)/patch-afm_Makefile.in \
 $(ENSCRIPT_SOURCE_DIR)/patch-lib_Makefile.in \
 $(ENSCRIPT_SOURCE_DIR)/patch-states_hl_Makefile.in
 
@@ -113,7 +112,7 @@ $(ENSCRIPT_BUILD_DIR)/.configured: $(DL_DIR)/$(ENSCRIPT_SOURCE) $(ENSCRIPT_PATCH
 	$(ENSCRIPT_UNZIP) $(DL_DIR)/$(ENSCRIPT_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(ENSCRIPT_PATCHES)" ; \
 		then cat $(ENSCRIPT_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(ENSCRIPT_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(ENSCRIPT_DIR) -bp0 ; \
 	fi
 	if test "$(BUILD_DIR)/$(ENSCRIPT_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(ENSCRIPT_DIR) $(@D) ; \
@@ -121,13 +120,16 @@ $(ENSCRIPT_BUILD_DIR)/.configured: $(DL_DIR)/$(ENSCRIPT_SOURCE) $(ENSCRIPT_PATCH
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(ENSCRIPT_CPPFLAGS)" \
-		LDFLAGS="$(filter-out -luclibcnotimpl, $(STAGING_LDFLAGS)) $(ENSCRIPT_LDFLAGS)" \
+		LDFLAGS="$(STAGING_LDFLAGS) $(ENSCRIPT_LDFLAGS)" \
+		AMDEP_TRUE='#' \
+		am__fastdepCC_TRUE='#' \
+		ac_objext='o' \
 		./configure \
 		--build=$(GNU_HOST_NAME) \
 		--host=$(GNU_TARGET_NAME) \
 		--target=$(GNU_TARGET_NAME) \
 		--prefix=$(TARGET_PREFIX) \
---disable-dependency-tracking \
+		--disable-dependency-tracking \
 		--disable-nls \
 		--disable-static \
 	)
@@ -141,7 +143,7 @@ enscript-unpack: $(ENSCRIPT_BUILD_DIR)/.configured
 #
 $(ENSCRIPT_BUILD_DIR)/.built: $(ENSCRIPT_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(@D) CC="$(TARGET_CC)"
+	$(MAKE) -C $(@D) OBJEXT='o'
 	touch $@
 
 #
@@ -192,7 +194,7 @@ $(ENSCRIPT_IPK_DIR)/CONTROL/control:
 #
 $(ENSCRIPT_IPK): $(ENSCRIPT_BUILD_DIR)/.built
 	rm -rf $(ENSCRIPT_IPK_DIR) $(BUILD_DIR)/enscript_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(ENSCRIPT_BUILD_DIR) DESTDIR=$(ENSCRIPT_IPK_DIR) install-strip
+	$(MAKE) -C $(ENSCRIPT_BUILD_DIR) DESTDIR=$(ENSCRIPT_IPK_DIR)  OBJEXT='o' install-strip
 	rm -rf $(ENSCRIPT_IPK_DIR)$(TARGET_PREFIX)/info/dir*
 	$(MAKE) $(ENSCRIPT_IPK_DIR)/CONTROL/control
 	echo $(ENSCRIPT_CONFFILES) | sed -e 's/ /\n/g' > $(ENSCRIPT_IPK_DIR)/CONTROL/conffiles

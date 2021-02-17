@@ -30,20 +30,16 @@ PLAYER_DESCRIPTION=Player provides a network interface to a variety of robot and
 Player''s client/server model allows robot control programs to be written in any programming language and to run on any computer with a network connection to the robot. Player supports multiple concurrent client connections to devices, creating new possibilities for distributed and collaborative sensing and control.
 PLAYER_SECTION=misc
 PLAYER_PRIORITY=optional
-PLAYER_DEPENDS=boost-thread (= $(BOOST_VERSION)-$(BOOST_IPK_VERSION)), \
-		boost-system (= $(BOOST_VERSION)-$(BOOST_IPK_VERSION)), \
-		libjpeg, openssl
-ifeq (gtk2, $(filter gtk2, $(PACKAGES)))
-PLAYER_SUGGESTS=gtk2
-else
-PLAYER_SUGGESTS=
+PLAYER_DEPENDS=boost-thread, boost-system, libjpeg, openssl, libtool, zlib
+ifeq (uclibc, $(LIBC_STYLE))
+PLAYER_DEPENDS +=, librpc-uclibc
 endif
 PLAYER_CONFLICTS=
 
 #
 # PLAYER_IPK_VERSION should be incremented when the ipk changes.
 #
-PLAYER_IPK_VERSION?=6
+PLAYER_IPK_VERSION?=16
 
 #
 # PLAYER_CONFFILES should be a list of user-editable files
@@ -56,7 +52,10 @@ PLAYER_IPK_VERSION?=6
 PLAYER_PATCHES=\
 $(PLAYER_SOURCE_DIR)/server-Makefile.in.patch \
 $(PLAYER_SOURCE_DIR)/uint.patch \
-$(PLAYER_SOURCE_DIR)/garminnmea.cc.patch
+$(PLAYER_SOURCE_DIR)/garminnmea.cc.patch \
+$(PLAYER_SOURCE_DIR)/disable_gtk.patch \
+$(PLAYER_SOURCE_DIR)/disable_mesalib.patch \
+$(PLAYER_SOURCE_DIR)/abs.patch \
 
 #
 # If the compilation of the package requires additional
@@ -67,7 +66,11 @@ ifdef NO_BUILTIN_MATH
 PLAYER_CPPFLAGS+=-fno-builtin-round -fno-builtin-rint \
 	-fno-builtin-cos -fno-builtin-sin -fno-builtin-exp
 endif
-PLAYER_LDFLAGS=-lboost_system -lm -lgcc
+PLAYER_LDFLAGS=-lboost_system -lm
+ifeq (uclibc, $(LIBC_STYLE))
+PLAYER_CPPFLAGS += -I$(STAGING_INCLUDE_DIR)/rpc-uclibc
+PLAYER_LDFLAGS += -lrpc-uclibc
+endif
 
 #
 # PLAYER_BUILD_DIR is the directory in which the build is done.
@@ -120,9 +123,9 @@ player-source: $(DL_DIR)/$(PLAYER_SOURCE) $(PLAYER_PATCHES)
 #
 $(PLAYER_BUILD_DIR)/.configured: $(DL_DIR)/$(PLAYER_SOURCE) $(PLAYER_PATCHES) make/player.mk
 	$(MAKE) libstdc++-stage \
-		boost-stage libjpeg-stage openssl-stage
-ifeq (gtk2, $(filter gtk2, $(PACKAGES)))
-	$(MAKE) gtk2-stage
+		boost-stage libjpeg-stage openssl-stage libtool-stage zlib-stage
+ifeq (uclibc, $(LIBC_STYLE))
+	$(MAKE) librpc-uclibc-stage
 endif
 	rm -rf $(BUILD_DIR)/$(PLAYER_DIR) $(@D)
 	$(PLAYER_UNZIP) $(DL_DIR)/$(PLAYER_SOURCE) | tar -C $(BUILD_DIR) -xvf -
@@ -133,9 +136,10 @@ endif
 	if test "$(BUILD_DIR)/$(PLAYER_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(PLAYER_DIR) $(@D) ; \
 	fi
-ifeq ($(shell test $(shell echo $(BOOST_VERSION) | cut -d '_' -f2) -ge 50; echo $$?),0)
+
+# boost 1_50_0+ fix
 	find $(@D) -type f -name '*.cc' -exec sed -i -e 's/TIME_UTC/TIME_UTC_/g' {} \;
-endif
+
 	sed -i -e '/^#include <stdio.h>/ i #include <stdlib.h>' $(@D)/server/drivers/mixed/erratic/erratic.cc
 	sed -i -e 's/gzseek(\|gzgets(/&(gzFile)/' $(@D)/server/drivers/shell/readlog.cc
 	sed -i -e '/^ *have_pkg_config=no/s/=no/=yes/' $(@D)/configure
@@ -170,6 +174,7 @@ player-unpack: $(PLAYER_BUILD_DIR)/.configured
 #
 $(PLAYER_BUILD_DIR)/.built: $(PLAYER_BUILD_DIR)/.configured
 	rm -f $@
+	$(MAKE) -C $(@D)/libplayercore libplayererror.la
 	$(MAKE) -C $(@D)
 	touch $@
 
@@ -221,8 +226,9 @@ $(PLAYER_IPK_DIR)/CONTROL/control:
 #
 $(PLAYER_IPK): $(PLAYER_BUILD_DIR)/.built
 	rm -rf $(PLAYER_IPK_DIR) $(BUILD_DIR)/player_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(PLAYER_BUILD_DIR) DESTDIR=$(PLAYER_IPK_DIR) install-strip
+	$(MAKE) -C $(PLAYER_BUILD_DIR) DESTDIR=$(PLAYER_IPK_DIR) install
 	rm -f $(PLAYER_IPK_DIR)$(TARGET_PREFIX)/lib/libplayer*.la
+	-$(STRIP_COMMAND) $(PLAYER_IPK_DIR)$(TARGET_PREFIX)/{bin/*,lib/*.so*,share/player/examples/*/*,share/player/examples/plugins/*/*} 2>/dev/null
 #	$(INSTALL) -d $(PLAYER_IPK_DIR)$(TARGET_PREFIX)/etc/
 #	$(INSTALL) -m 644 $(PLAYER_SOURCE_DIR)/player.conf $(PLAYER_IPK_DIR)$(TARGET_PREFIX)/etc/player.conf
 #	$(INSTALL) -d $(PLAYER_IPK_DIR)$(TARGET_PREFIX)/etc/init.d

@@ -20,12 +20,12 @@
 # from your name or email address.  If you leave MAINTAINER set to
 # "NSLU2 Linux" other developers will feel free to edit.
 #
-LFTP_SITE=http://lftp.cybermirror.org/old
-SFR_SITE=http://www.sfr-fresh.com/unix/misc
-LFTP_VERSION=4.4.0
-LFTP_SOURCE=lftp-$(LFTP_VERSION).tar.gz
+LFTP_SITE=http://lftp.tech/ftp
+LFTP_SITE_SFR=http://www.sfr-fresh.com/unix/misc
+LFTP_VERSION=4.7.5
+LFTP_SOURCE=lftp-$(LFTP_VERSION).tar.xz
 LFTP_DIR=lftp-$(LFTP_VERSION)
-LFTP_UNZIP=zcat
+LFTP_UNZIP=xzcat
 LFTP_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 LFTP_DESCRIPTION=Sophisticated ftp/http client, file transfer program supporting a number of network protocols.
 LFTP_SECTION=net
@@ -50,7 +50,8 @@ LFTP_IPK_VERSION=1
 # LFTP_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-LFTP_PATCHES=$(LFTP_SOURCE_DIR)/IPV6_V6ONLY.patch
+LFTP_PATCHES=\
+$(LFTP_SOURCE_DIR)/500-glibc_2.25_compat.patch \
 
 #
 # If the compilation of the package requires additional
@@ -98,7 +99,7 @@ LFTP_IPK=$(BUILD_DIR)/lftp_$(LFTP_VERSION)-$(LFTP_IPK_VERSION)_$(TARGET_ARCH).ip
 $(DL_DIR)/$(LFTP_SOURCE):
 	$(WGET) -P $(@D) $(LFTP_SITE)/$(@F) || \
 	$(WGET) -P $(@D) $(SOURCES_NLO_SITE)/$(@F) || \
-	$(WGET) -P $(@D) $(SFR_SITE)/$(@F)
+	$(WGET) -P $(@D) $(LFTP_SITE_SFR)/$(@F)
 
 #
 # The source code depends on it existing within the download directory.
@@ -135,30 +136,12 @@ endif
 	$(LFTP_UNZIP) $(DL_DIR)/$(LFTP_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(LFTP_PATCHES)" ; \
 		then cat $(LFTP_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(LFTP_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(LFTP_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(LFTP_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(LFTP_DIR) $(@D) ; \
 	fi
-	sed -i.orig -e '/gets is a security hole - use fgets instead/s|^|//|' $(@D)/lib/stdio.in.h
 	(cd $(@D); \
-	if test `$(TARGET_CC) -dumpversion | cut -c1` = 3; then \
-		$(TARGET_CONFIGURE_OPTS) \
-		CPPFLAGS="$(STAGING_CPPFLAGS) $(LFTP_CPPFLAGS)" \
-		LDFLAGS="$(STAGING_LDFLAGS) $(LFTP_LDFLAGS)" \
-		LIBGNUTLS_CONFIG=$(STAGING_PREFIX)/bin/libgnutls-config \
-		PKG_CONFIG_PATH="$(STAGING_LIB_DIR)/pkgconfig" \
-		$(LFTP_CONFIG_ENV) \
-		$(LFTP_CROSS_CONFIGURE_SIGNBIT_GCC3) \
-		./configure \
-		--build=$(GNU_HOST_NAME) \
-		--host=$(GNU_TARGET_NAME) \
-		--target=$(GNU_TARGET_NAME) \
-		--prefix=$(TARGET_PREFIX) \
-		--disable-nls \
-		--disable-static \
-		; \
-	else \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(LFTP_CPPFLAGS)" \
 		LDFLAGS="$(STAGING_LDFLAGS) $(LFTP_LDFLAGS)" \
@@ -172,8 +155,13 @@ endif
 		--prefix=$(TARGET_PREFIX) \
 		--disable-nls \
 		--disable-static \
-		; \
-	fi \
+		--with-readline=$(STAGING_PREFIX) \
+		--with-readline-inc=$(STAGING_INCLUDE_DIR) \
+		--with-readline-lib="$(STAGING_LDFLAGS) -lreadline" \
+		--with-expat=$(STAGING_PREFIX) \
+		--with-expat-inc=$(STAGING_INCLUDE_DIR) \
+		--with-expat-lib="$(STAGING_LDFLAGS) -lexpat" \
+		--with-zlib=$(STAGING_PREFIX) \
 	)
 	$(PATCH_LIBTOOL) $(@D)/libtool
 	touch $@

@@ -20,7 +20,7 @@
 # from your name or email address.  If you leave MAINTAINER set to
 # "NSLU2 Linux" other developers will feel free to edit.
 #
-FUSE_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/fuse
+FUSE_SITE=http://pkgs.fedoraproject.org/repo/pkgs/fuse/$(FUSE_SOURCE)/ecb712b5ffc6dffd54f4a405c9b372d8
 FUSE_VERSION=2.9.4
 FUSE_SOURCE=fuse-$(FUSE_VERSION).tar.gz
 FUSE_DIR=fuse-$(FUSE_VERSION)
@@ -46,7 +46,7 @@ FUSE_CONFLICTS=
 #
 # FUSE_IPK_VERSION should be incremented when the ipk changes.
 #
-FUSE_IPK_VERSION=1
+FUSE_IPK_VERSION=2
 
 #
 # FUSE_CONFFILES should be a list of user-editable files
@@ -185,6 +185,9 @@ $(FUSE_BUILD_DIR)/.staged: $(FUSE_BUILD_DIR)/.built
 	rm -f $@
 	$(MAKE) -C $(@D)/lib DESTDIR=$(STAGING_DIR) install
 	$(MAKE) -C $(@D)/include DESTDIR=$(STAGING_DIR) install
+	mkdir -p $(STAGING_LIB_DIR)/pkgconfig
+	cp -f $(@D)/fuse.pc $(STAGING_LIB_DIR)/pkgconfig
+	sed -i -e '/^prefix=/s|=.*|=$(STAGING_PREFIX)|' $(STAGING_LIB_DIR)/pkgconfig/fuse.pc
 	touch $@
 
 fuse-stage: $(FUSE_BUILD_DIR)/.staged

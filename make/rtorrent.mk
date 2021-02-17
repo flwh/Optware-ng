@@ -14,8 +14,8 @@
 #
 RTORRENT_SITE=https://github.com/rakshasa/rtorrent/archive
 
-RTORRENT_VERSION=0.9.4
-RTORRENT_IPK_VERSION=1
+RTORRENT_VERSION=0.9.6
+RTORRENT_IPK_VERSION=3
 
 RTORRENT_SVN=svn://rakshasa.no/libtorrent/trunk/rtorrent
 #RTORRENT_SVN_REV=1037
@@ -103,7 +103,7 @@ ifdef RTORRENT_SVN_REV
 		rm -rf $(RTORRENT_DIR) \
 	)
 else
-	$(WGET) -O $@ $(RTORRENT_SITE_GITHUB)/$(RTORRENT_VERSION).tar.gz || \
+	$(WGET) -O $@ $(RTORRENT_SITE)/$(RTORRENT_VERSION).tar.gz || \
 	$(WGET) -P $(@D) $(SOURCES_NLO_SITE)/$(@F)
 endif
 

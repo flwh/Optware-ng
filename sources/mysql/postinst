@@ -3,18 +3,27 @@
 # postinstall - this script will be executed after the MySQL PKG
 # installation has been performed.
 #
-# This script will install the MySQL privilege tables using the
-# "mysql_install_db" script and will correct the ownerships of these files
-# afterwards.
+# This script will install the MySQL privilege tables
 #
 # it also starts mysqld after install
 
 if [ ! -f %OPTWARE_TARGET_PREFIX%/var/lib/mysql/mysql/db.frm ] ; then
-	%OPTWARE_TARGET_PREFIX%/bin/mysql_install_db
+	%OPTWARE_TARGET_PREFIX%/bin/mysqld --initialize-insecure
+	echo '====================================================='
+	echo "After mysqld starts, don't forget to execute" 
+	echo "%OPTWARE_TARGET_PREFIX%/bin/mysqladmin password"
+	echo "to set root password"
+	echo '====================================================='
 fi
 
-if [ -d %OPTWARE_TARGET_PREFIX%/var/lib/mysql ] ; then
-    chown -R root:root %OPTWARE_TARGET_PREFIX%/var/lib/mysql
+if [ -z "`grep plugin_dir %OPTWARE_TARGET_PREFIX%/etc/my.cnf`" ]; then
+	echo '====================WARNING!========================='
+	echo "Automatically adding" 
+	echo "'plugin_dir 	= %OPTWARE_TARGET_PREFIX%/lib/mysql/plugin'"
+	echo "line to [mysqld] section of %OPTWARE_TARGET_PREFIX%/etc/my.cnf,"
+	echo "since plugins are now located in 	%OPTWARE_TARGET_PREFIX%/lib/mysql/plugin"
+	echo '====================================================='
+	sed -i -e '/^\[mysqld\]/s|$|\nplugin_dir \t= %OPTWARE_TARGET_PREFIX%/lib/mysql/plugin|' %OPTWARE_TARGET_PREFIX%/etc/my.cnf
 fi
 
 %OPTWARE_TARGET_PREFIX%/etc/init.d/S70mysqld start

@@ -47,7 +47,7 @@ PHP_THTTPD_LIBPHP_UNZIP=$(PHP_UNZIP)
 #
 # PHP_THTTPD_IPK_VERSION should be incremented when the ipk changes.
 #
-PHP_THTTPD_IPK_VERSION=1
+PHP_THTTPD_IPK_VERSION=5
 
 #
 # PHP_THTTPD_CONFFILES should be a list of user-editable files
@@ -118,6 +118,7 @@ $(PHP_THTTPD_LIBPHP_BUILD_DIR)/.configured: $(PHP_HOST_CLI) $(DL_DIR)/$(PHP_THTT
 	$(MAKE) php-source bzip2-stage gdbm-stage libcurl-stage libdb-stage libgd-stage libxml2-stage \
 		libxslt-stage openssl-stage mysql-stage postgresql-stage freetds-stage \
 		unixodbc-stage imap-stage libpng-stage libjpeg-stage libzip-stage icu-stage \
+		libpam-stage net-snmp-stage \
 		libgmp-stage sqlite-stage libmcrypt-stage libtool-stage libtool-host-stage
 ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
 	$(MAKE) libiconv-stage
@@ -184,6 +185,7 @@ endif
 		--with-config-file-scan-dir=$(TARGET_PREFIX)/etc/php.d \
 		--with-layout=GNU \
 		--disable-static \
+		--enable-maintainer-zts \
 		--disable-cgi \
 		--disable-cli \
 		--enable-bcmath=shared \
@@ -212,13 +214,14 @@ endif
 		--with-gdbm=$(STAGING_PREFIX) \
 		--with-gd=shared,$(STAGING_PREFIX) \
 		--with-imap=shared,$(STAGING_PREFIX) \
-		--with-mysql=shared,$(STAGING_PREFIX) \
+		--without-mysql \
 		--with-mysql-sock=/tmp/mysql.sock \
 		--with-mysqli=shared,$(STAGING_PREFIX)/bin/mysql_config \
 		--with-pgsql=shared,$(STAGING_PREFIX) \
 		--with-mssql=shared,$(STAGING_PREFIX) \
 		--with-unixODBC=shared,$(STAGING_PREFIX) \
 		--with-openssl=shared,$(STAGING_PREFIX) \
+		--with-snmp=shared,$(STAGING_PREFIX) \
 		--with-sqlite=shared,$(STAGING_PREFIX) \
 		--with-pdo-mysql=shared,$(STAGING_PREFIX) \
 		--with-pdo-pgsql=shared,$(STAGING_PREFIX) \
@@ -302,7 +305,7 @@ $(PHP_THTTPD_LIBPHP_BUILD_DIR)/.built: $(PHP_THTTPD_LIBPHP_BUILD_DIR)/.configure
 
 $(PHP_THTTPD_BUILD_DIR)/.built: $(PHP_THTTPD_LIBPHP_BUILD_DIR)/.built $(PHP_THTTPD_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(@D) PHP_LIBS="libphp5.a -lxml2 -lcrypt -lm"
+	$(MAKE) -C $(@D) -j1 PHP_LIBS="libphp5.a -lxml2 -lcrypt -lm" CCOPT="-I$(@D)/_libphp/TSRM -I$(@D)/_libphp/Zend -include $(@D)/_libphp/Zend/zend.h"
 	touch $@
 
 #
@@ -343,7 +346,7 @@ $(PHP_THTTPD_IPK_DIR)/CONTROL/control:
 $(PHP_THTTPD_IPK): $(PHP_THTTPD_BUILD_DIR)/.built
 	rm -rf $(PHP_THTTPD_IPK_DIR) $(BUILD_DIR)/php-thttpd_*_$(TARGET_ARCH).ipk
 	mkdir -p $(PHP_THTTPD_IPK_DIR)$(TARGET_PREFIX)/sbin $(PHP_THTTPD_IPK_DIR)$(TARGET_PREFIX)/share/man/man1 $(PHP_THTTPD_IPK_DIR)$(TARGET_PREFIX)/share/man/man8 $(PHP_THTTPD_IPK_DIR)$(TARGET_PREFIX)/share/www
-	$(MAKE) -C $(PHP_THTTPD_BUILD_DIR) DESTDIR=$(PHP_THTTPD_IPK_DIR) install
+	$(MAKE) -C $(PHP_THTTPD_BUILD_DIR) DESTDIR=$(PHP_THTTPD_IPK_DIR) install -j1
 	chmod u+rw $(PHP_THTTPD_IPK_DIR)$(TARGET_PREFIX)/sbin/*
 	$(STRIP_COMMAND) $(PHP_THTTPD_IPK_DIR)$(TARGET_PREFIX)/sbin/thttpd
 	$(STRIP_COMMAND) $(PHP_THTTPD_IPK_DIR)$(TARGET_PREFIX)/sbin/makeweb

@@ -18,24 +18,9 @@ endif
 UCLIBC-OPT_DESCRIPTION=micro C library for embedded Linux systems
 UCLIBC-OPT_SECTION=base
 UCLIBC-OPT_PRIORITY=required
-ifneq ($(OPTWARE_TARGET), $(filter buildroot-armeabi buildroot-armeabi-ng buildroot-mipsel buildroot-mipsel-ng shibby-tomato-arm, $(OPTWARE_TARGET)))
-UCLIBC-OPT_DEPENDS=
-else
-#	to make feed firmware-independent, we make
-#	all packages dependent on uclibc-opt by hacking ipkg-build from ipkg-utils,
-#	so make uclibc-opt dependent on libnsl, which is a part of uClibc
-UCLIBC-OPT_DEPENDS=libnsl
-endif
-ifeq (ipkg-opt, $(filter ipkg-opt, $(PACKAGES)))
-UCLIBC-OPT_SUGGESTS=ipkg-opt
-else
+UCLIBC-OPT_DEPENDS=$(strip $(if $(filter true, $(NO_LIBNSL)), , libnsl))
 UCLIBC-OPT_SUGGESTS=
-endif
 UCLIBC-OPT_CONFLICTS=
-
-
-### package non-stripped libpthread and libthread_db, increment ipk version
-override UCLIBC-OPT_IPK_VERSION := $(shell expr $(UCLIBC-OPT_IPK_VERSION) + 1 )
 
 # UCLIBC-OPT_IPK_DIR is the directory in which the ipk is built.
 # UCLIBC-OPT_IPK is the name of the resulting ipk files.
@@ -82,14 +67,14 @@ $(UCLIBC-OPT_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 ifdef UCLIBC-OPT_FROM_BUILDROOT
-UCLIBC-OPT_LIBS=ld-uClibc libc libdl libgcc_s libm libintl libnsl libpthread \
+UCLIBC-OPT_LIBS=ld-uClibc libc libdl libgcc_s libm libintl libpthread \
 	libthread_db libresolv  librt libutil libuClibc libstdc++
 ifeq ($(BUILRTOOT_GCC), 4.1.1)
 UCLIBC-OPT_LIBS+=libssp
 endif
 else
-UCLIBC-OPT_LIBS=ld-uClibc libc libdl libgcc_s libm libpthread \
-	libthread_db libresolv librt libutil libuClibc
+UCLIBC-OPT_LIBS=ld-uClibc libc libgcc_s \
+	libthread_db libuClibc
 endif
 
 UCLIBC-OPT_LIBS_PATTERN=$(patsubst %,$(UCLIBC-OPT_LIBS_SOURCE_DIR)/%*so*,$(UCLIBC-OPT_LIBS))
@@ -119,10 +104,11 @@ endif
 	$(INSTALL) -d $(UCLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/etc
 	$(INSTALL) -d $(UCLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/lib
 	cp -af $(UCLIBC-OPT_LIBS_PATTERN) $(UCLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/lib
-	-$(STRIP_COMMAND) $(patsubst %, $(UCLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/lib/%*so*, $(UCLIBC-OPT_LIBS))
-	### package non-stripped libpthread and libthread_db
-	cp -f $(UCLIBC-OPT_LIBS_SOURCE_DIR)/libpthread* $(UCLIBC-OPT_LIBS_SOURCE_DIR)/libthread_db* \
-							$(UCLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/lib
+	# this is provided by libc-dev
+	rm -f $(UCLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/lib/libgcc_s.so
+	$(STRIP_COMMAND) $(patsubst %, $(UCLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/lib/%*so*, $(UCLIBC-OPT_LIBS))
+	### package non-stripped libthread_db
+	cp -f $(UCLIBC-OPT_LIBS_SOURCE_DIR)/libthread_db* $(UCLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/lib
 	$(MAKE) $(UCLIBC-OPT_IPK_DIR)/CONTROL/control
 ifdef UCLIBC-OPT_FROM_BUILDROOT
 	$(INSTALL) -d $(UCLIBC-OPT_IPK_DIR)$(TARGET_PREFIX)/usr/lib

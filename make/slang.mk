@@ -29,7 +29,7 @@ SLANG_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 SLANG_DESCRIPTION=S-Lang is a multi-platform library designed to allow a developer to create robust multi-platform software.
 SLANG_SECTION=lib
 SLANG_PRIORITY=optional
-SLANG_DEPENDS=
+SLANG_DEPENDS=ncurses-base
 SLANG_SUGGESTS=pcre, libpng
 ifneq (, $(filter libiconv, $(PACKAGES)))
 SLANG_SUGGESTS +=, libiconv
@@ -39,7 +39,7 @@ SLANG_CONFLICTS=
 #
 # SLANG_IPK_VERSION should be incremented when the ipk changes.
 #
-SLANG_IPK_VERSION ?= 1
+SLANG_IPK_VERSION ?= 5
 
 #
 # SLANG_CONFFILES should be a list of user-editable files
@@ -49,12 +49,11 @@ SLANG_IPK_VERSION ?= 1
 # SLANG_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-ifeq (uclibc, $(LIBC_STYLE))
-ifneq ($(UCLIBC_NG), yes)
-SLANG_PATCHES=$(SLANG_SOURCE_DIR)/uclibc.patch
-endif
-endif
-SLANG_PATCHES?=$(SLANG_SOURCE_DIR)/WCONTINUED.patch
+SLANG_PATCHES?=\
+$(SLANG_SOURCE_DIR)/WCONTINUED.patch \
+$(SLANG_SOURCE_DIR)/force-xterm.patch \
+$(SLANG_SOURCE_DIR)/default_to_utf8.patch \
+
 
 #
 # If the compilation of the package requires additional
@@ -155,7 +154,7 @@ endif
 		$(SLANG_CONFIGURE_ARGS) \
 	)
 	sed -i -e '/^LIBS =/s|$$| $$(LDFLAGS)|' $(@D)/modules/Makefile
-#	$(PATCH_LIBTOOL) $(SLANG_BUILD_DIR)/libtool
+#	$(PATCH_LIBTOOL) $(@D)/libtool
 	touch $@
 
 slang-unpack: $(SLANG_BUILD_DIR)/.configured
@@ -165,7 +164,8 @@ slang-unpack: $(SLANG_BUILD_DIR)/.configured
 #
 $(SLANG_BUILD_DIR)/.built: $(SLANG_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(@D)
+	mkdir -p $(@D)/modules/objs $(@D)/src/elfobjs
+	$(MAKE) -C $(@D) MISC_TERMINFO_DIRS=$(TARGET_PREFIX)/share/terminfo
 	touch $@
 
 #
@@ -178,7 +178,7 @@ slang: $(SLANG_BUILD_DIR)/.built
 #
 $(SLANG_BUILD_DIR)/.staged: $(SLANG_BUILD_DIR)/.built
 	rm -f $@
-	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install-elf
+	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install-elf -j1
 	rm -f $(STAGING_LIB_DIR)/libslang.a
 	touch $@
 
@@ -217,7 +217,7 @@ $(SLANG_IPK_DIR)/CONTROL/control:
 #
 $(SLANG_IPK): $(SLANG_BUILD_DIR)/.built
 	rm -rf $(SLANG_IPK_DIR) $(BUILD_DIR)/slang_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(SLANG_BUILD_DIR) DESTDIR=$(SLANG_IPK_DIR) install-elf
+	$(MAKE) -C $(SLANG_BUILD_DIR) DESTDIR=$(SLANG_IPK_DIR) install-elf -j1
 	rm -f $(SLANG_IPK_DIR)$(TARGET_PREFIX)/lib/libslang.a
 	$(STRIP_COMMAND) $(SLANG_IPK_DIR)$(TARGET_PREFIX)/bin/slsh \
 		$(SLANG_IPK_DIR)$(TARGET_PREFIX)/lib/libslang.so.$(SLANG_VERSION) \
@@ -234,6 +234,7 @@ $(SLANG_IPK): $(SLANG_BUILD_DIR)/.built
 #	sed -i -e '/^#!/aOPTWARE_TARGET=${OPTWARE_TARGET}' $(SLANG_IPK_DIR)/CONTROL/prerm
 	echo $(SLANG_CONFFILES) | sed -e 's/ /\n/g' > $(SLANG_IPK_DIR)/CONTROL/conffiles
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(SLANG_IPK_DIR)
+	$(WHAT_TO_DO_WITH_IPK_DIR) $(SLANG_IPK_DIR)
 
 #
 # This is called from the top level makefile to create the IPK file.

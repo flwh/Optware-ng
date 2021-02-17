@@ -12,7 +12,7 @@
 # It is usually "zcat" (for .gz) or "bzcat" (for .bz2)
 #
 LIBTORRENT_SITE=https://github.com/rakshasa/libtorrent/archive
-LIBTORRENT_VERSION=0.13.4
+LIBTORRENT_VERSION=0.13.6
 LIBTORRENT_SVN=svn://rakshasa.no/libtorrent/trunk/libtorrent
 #LIBTORRENT_SVN_REV=1037
 ifdef LIBTORRENT_SVN_REV
@@ -33,7 +33,7 @@ LIBTORRENT_CONFLICTS=
 #
 # LIBTORRENT_IPK_VERSION should be incremented when the ipk changes.
 #
-LIBTORRENT_IPK_VERSION=1
+LIBTORRENT_IPK_VERSION=3
 
 #
 # LIBTORRENT_CONFFILES should be a list of user-editable files
@@ -83,7 +83,7 @@ endif
 ifeq ($(OPTWARE_TARGET), $(filter cs05q3armel mssii, $(OPTWARE_TARGET)))
 LIBTORRENT_CONFIG_ARGS+=--without-epoll
 endif
-ifeq ($(OPTWARE_TARGET), $(filter buildroot-mipsel buildroot-mipsel-ng buildroot-armv5eabi-ng, $(OPTWARE_TARGET)))
+ifeq ($(OPTWARE_TARGET), $(filter buildroot-mipsel buildroot-mipsel-ng buildroot-armv5eabi-ng buildroot-ppc-603e ct-ng-ppc-e500v2, $(OPTWARE_TARGET)))
 LIBTORRENT_CONFIG_ARGS+=--disable-instrumentation
 endif
 
@@ -121,7 +121,7 @@ ifdef LIBTORRENT_SVN_REV
 		rm -rf $(LIBTORRENT_DIR) \
 		)
 else
-	$(WGET) -O $@ $(LIBTORRENT_SITE)/$(LIBTORRENT_VERSION).tar.gz \
+	$(WGET) -O $@ $(LIBTORRENT_SITE)/$(LIBTORRENT_VERSION).tar.gz || \
 	$(WGET) -P $(@D) $(SOURCES_NLO_SITE)/$(@F)
 endif
 
@@ -185,6 +185,7 @@ $(LIBTORRENT_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBTORRENT_SOURCE) $(LIBTORRENT
 ifneq (, $(filter gumstix1151 mbwe-bluering, $(OPTWARE_TARGET)))
 	sed -i -e '/USE_MADVISE/s|.*|/* #undef USE_MADVISE */|' $(@D)/config.h
 endif
+	find $(@D) -name Makefile -exec sed -i -e 's;-I/usr/include$$\|-I/usr/include[ \t]\|-I/usr/include/[^ \t]*;;g' {} \;
 	$(PATCH_LIBTOOL) $(@D)/libtool
 	touch $@
 

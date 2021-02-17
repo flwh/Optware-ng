@@ -11,7 +11,7 @@
 # archive is unpacked.
 #
 FONTCONFIG_SITE=http://fontconfig.org/release
-FONTCONFIG_VERSION=2.8.0
+FONTCONFIG_VERSION=2.12.4
 FONTCONFIG_SOURCE=fontconfig-$(FONTCONFIG_VERSION).tar.gz
 FONTCONFIG_DIR=fontconfig-$(FONTCONFIG_VERSION)
 FONTCONFIG_MAINTAINER=Josh Parsons <jbparsons@ucdavis.edu>
@@ -26,7 +26,7 @@ endif
 #
 # FONTCONFIG_IPK_VERSION should be incremented when the ipk changes.
 #
-FONTCONFIG_IPK_VERSION=0
+FONTCONFIG_IPK_VERSION=1
 
 #
 # FONTCONFIG_CONFFILES should be a list of user-editable files
@@ -98,33 +98,30 @@ fontconfig-source: $(DL_DIR)/fontconfig-$(FONTCONFIG_VERSION).tar.gz $(FONTCONFI
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
 $(FONTCONFIG_BUILD_DIR)/.configured: $(DL_DIR)/fontconfig-$(FONTCONFIG_VERSION).tar.gz \
-		$(FONTCONFIG_PATCHES)
-	$(MAKE) freetype-stage
-	$(MAKE) expat-stage
+		$(FONTCONFIG_PATCHES) make/fontconfig.mk
+	$(MAKE) freetype-stage expat-stage
 ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
 	$(MAKE) libiconv-stage
 endif
-	rm -rf $(BUILD_DIR)/$(FONTCONFIG_DIR) $(FONTCONFIG_BUILD_DIR)
+	rm -rf $(BUILD_DIR)/$(FONTCONFIG_DIR) $(@D)
 	tar -C $(BUILD_DIR) -xzf $(DL_DIR)/fontconfig-$(FONTCONFIG_VERSION).tar.gz
 	if test -n "$(FONTCONFIG_PATCHES)" ; \
 		then cat $(FONTCONFIG_PATCHES) | \
 		$(PATCH) -d $(BUILD_DIR)/$(FONTCONFIG_DIR) -p1 ; \
 	fi
-	if test "$(BUILD_DIR)/$(FONTCONFIG_DIR)" != "$(FONTCONFIG_BUILD_DIR)" ; \
-		then mv $(BUILD_DIR)/$(FONTCONFIG_DIR) $(FONTCONFIG_BUILD_DIR) ; \
+	if test "$(BUILD_DIR)/$(FONTCONFIG_DIR)" != "$(@D)" ; \
+		then mv $(BUILD_DIR)/$(FONTCONFIG_DIR) $(@D) ; \
 	fi
-	sed -i -e '/^LDFLAGS/s|=.*$$|=|' \
-		$(@D)/fc-arch/Makefile.in \
+	sed -i -e '/^\(LDFLAGS\|CFLAGS\|CPPFLAGS\) =/s|=.*$$|=|' \
 		$(@D)/fc-case/Makefile.in \
 		$(@D)/fc-glyphname/Makefile.in \
 		$(@D)/fc-lang/Makefile.in \
 		;
-	(cd $(FONTCONFIG_BUILD_DIR); \
+	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(FONTCONFIG_CPPFLAGS)" \
 		LDFLAGS="$(STAGING_LDFLAGS) $(FONTCONFIG_LDFLAGS)" \
 		PKG_CONFIG_PATH="$(STAGING_LIB_DIR)/pkgconfig" \
-		PKG_CONFIG_LIBDIR="$(STAGING_LIB_DIR)/pkgconfig" \
 		ac_cv_prog_HASDOCBOOK=no \
 		./configure \
 		--with-arch=$(TARGET_ARCH) \
@@ -138,7 +135,9 @@ endif
 		--disable-docs \
 		--disable-static \
 	)
-	$(PATCH_LIBTOOL) $(FONTCONFIG_BUILD_DIR)/libtool
+	$(PATCH_LIBTOOL) $(@D)/libtool
+	sed -i -e 's|$(STAGING_INCLUDE_DIR)|\$${includedir}|g' -e 's|$(STAGING_LIB_DIR)|\$${libdir}|g' \
+		$(@D)/fontconfig.pc
 	touch $@
 
 fontconfig-unpack: $(FONTCONFIG_BUILD_DIR)/.configured
@@ -148,7 +147,7 @@ fontconfig-unpack: $(FONTCONFIG_BUILD_DIR)/.configured
 #
 $(FONTCONFIG_BUILD_DIR)/.built: $(FONTCONFIG_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(FONTCONFIG_BUILD_DIR)
+	$(MAKE) -C $(@D)
 	touch $@
 
 #

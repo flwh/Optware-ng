@@ -27,18 +27,10 @@
 # "NSLU2 Linux" other developers will feel free to edit.
 #
 RUBY_SITE=ftp://ftp.ruby-lang.org/pub/ruby
-ifneq (wl500g, $(OPTWARE_TARGET))
-RUBY_UPSTREAM_VERSION=2.2.0
-RUBY_VERSION=2.2.0
-RUBY_IPK_VERSION=1
-#RUBY_UPSTREAM_VERSION=1.9.1-p243
-#RUBY_VERSION=1.9.1.243
-#RUBY_IPK_VERSION=2
-else
-RUBY_UPSTREAM_VERSION=1.8.6-p36
-RUBY_VERSION=1.8.6.36
-RUBY_IPK_VERSION=2
-endif
+RUBY_UPSTREAM_VERSION=2.3.1
+RUBY_VERSION=2.3.1
+RUBY_LIB_VERSION=2.3.0
+RUBY_IPK_VERSION=7
 RUBY_SOURCE=ruby-$(RUBY_UPSTREAM_VERSION).tar.gz
 RUBY_DIR=ruby-$(RUBY_UPSTREAM_VERSION)
 RUBY_UNZIP=zcat
@@ -46,7 +38,9 @@ RUBY_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 RUBY_DESCRIPTION=An interpreted scripting language for quick and easy object-oriented programming.
 RUBY_SECTION=misc
 RUBY_PRIORITY=optional
-RUBY_DEPENDS=zlib, readline, openssl, ncurses
+RUBY_DEPENDS=zlib, readline, openssl, ncurses, libgmp, libffi, gdbm
+
+RUBY_ARCH?=$(TARGET_ARCH)-linux-gnu
 
 
 #
@@ -121,7 +115,8 @@ ruby-source: $(DL_DIR)/$(RUBY_SOURCE) $(RUBY_PATCHES)
 #
 # http://www.ruby-talk.org/cgi-bin/scat.rb/ruby/ruby-talk/159766
 $(RUBY_BUILD_DIR)/.configured: $(DL_DIR)/$(RUBY_SOURCE) $(RUBY_PATCHES) make/ruby.mk
-	$(MAKE) zlib-stage readline-stage openssl-stage ncurses-stage
+	$(MAKE) zlib-stage readline-stage openssl-stage ncurses-stage libgmp-stage \
+		gdbm-stage libffi-stage
 	rm -rf $(BUILD_DIR)/$(RUBY_DIR) $(@D)
 	$(RUBY_UNZIP) $(DL_DIR)/$(RUBY_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(RUBY_PATCHES)" ; \
@@ -141,6 +136,7 @@ endif
 		LDFLAGS="$(STAGING_LDFLAGS) $(RUBY_LDFLAGS)" \
 		DLDFLAGS="$(STAGING_LDFLAGS) $(RUBY_LDFLAGS)" \
 		ac_cv_func_setpgrp_void=yes \
+		ac_cv_path_BASERUBY=$(RUBY_HOST_RUBY) \
 		./configure \
 		--build=$(GNU_HOST_NAME) \
 		--host=$(GNU_TARGET_NAME) \
@@ -175,7 +171,7 @@ $(RUBY_BUILD_DIR)/.built: $(RUBY_BUILD_DIR)/.configured
 #
 ruby: $(RUBY_BUILD_DIR)/.built
 
-$(RUBY_HOST_BUILD_DIR)/.staged: host/.configured make/ruby.mk
+$(RUBY_HOST_BUILD_DIR)/.staged: host/.configured $(DL_DIR)/$(RUBY_SOURCE) #make/ruby.mk
 	rm -rf $(HOST_BUILD_DIR)/$(RUBY_DIR) $(@D)
 	$(RUBY_UNZIP) $(DL_DIR)/$(RUBY_SOURCE) | tar -C $(HOST_BUILD_DIR) -xvf -
 #	cat $(RUBY_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(RUBY_DIR) -p1
@@ -189,9 +185,10 @@ $(RUBY_HOST_BUILD_DIR)/.staged: host/.configured make/ruby.mk
 		--disable-install-doc \
 	)
 	$(MAKE) -C $(@D)
+	rm -f $(HOST_STAGING_PREFIX)/bin/rake
 	$(MAKE) -C $(@D) install
 	rm -f $(HOST_STAGING_LIB_DIR)/ruby/ruby.h
-	cd $(HOST_STAGING_LIB_DIR)/ruby && ln -sf $(RUBY_VERSION)/*-linux/ruby.h .
+	cd $(HOST_STAGING_LIB_DIR)/ruby && ln -sf $(RUBY_LIB_VERSION)/*-linux/ruby.h .
 	touch $@
 
 ifneq ($(HOSTCC), $(TARGET_CC))
@@ -205,9 +202,10 @@ endif
 #
 $(RUBY_BUILD_DIR)/.staged: $(RUBY_BUILD_DIR)/.built
 	rm -f $@
+	rm -f $(STAGING_PREFIX)/bin/rake
 	PATH=`dirname $(RUBY_HOST_RUBY)`:$$PATH \
 	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install
-	-cp -f $(STAGING_INCLUDE_DIR)/ruby-$(RUBY_VERSION)/*/ruby/config.h $(STAGING_INCLUDE_DIR)/ruby-$(RUBY_VERSION)/ruby
+	-cp -f $(STAGING_INCLUDE_DIR)/ruby-$(RUBY_LIB_VERSION)/*/ruby/config.h $(STAGING_INCLUDE_DIR)/ruby-$(RUBY_LIB_VERSION)/ruby
 	touch $@
 
 ruby-stage: $(RUBY_BUILD_DIR)/.staged
@@ -247,10 +245,13 @@ $(RUBY_IPK): $(RUBY_BUILD_DIR)/.built
 	$(MAKE) -C $(RUBY_BUILD_DIR) DESTDIR=$(RUBY_IPK_DIR) install
 	for so in $(RUBY_IPK_DIR)$(TARGET_PREFIX)/bin/ruby \
 	    $(RUBY_IPK_DIR)$(TARGET_PREFIX)/lib/libruby.so.[0-9]*.[0-9]*.[0-9]* \
-	    `find $(RUBY_IPK_DIR)$(TARGET_PREFIX)/lib/ruby/$(RUBY_VERSION)/ -name '*.so'`; \
+	    `find $(RUBY_IPK_DIR)$(TARGET_PREFIX)/lib/ruby/$(RUBY_LIB_VERSION)/ -name '*.so'`; \
 	do $(STRIP_COMMAND) $$so; \
 	done
-	$(INSTALL) -d $(RUBY_IPK_DIR)$(TARGET_PREFIX)/etc/
+	sed -i -e 's|$(TARGET_CROSS)|$(TARGET_PREFIX)/bin/|g' -e 's|$(STAGING_PREFIX)|$(TARGET_PREFIX)|g' \
+		-e '/CONFIG\["INSTALL"\]/d' -e 's|/usr|$(TARGET_PREFIX)|' \
+		$(RUBY_IPK_DIR)$(TARGET_PREFIX)/lib/ruby/$(RUBY_LIB_VERSION)/$(RUBY_ARCH)/rbconfig.rb
+	$(INSTALL) -d $(RUBY_IPK_DIR)$(TARGET_PREFIX)/etc
 	$(MAKE) $(RUBY_IPK_DIR)/CONTROL/control
 	if [ -f $(RUBY_IPK_DIR)$(TARGET_PREFIX)/bin/gem ] ; then \
 		mv -f $(RUBY_IPK_DIR)$(TARGET_PREFIX)/bin/gem $(RUBY_IPK_DIR)$(TARGET_PREFIX)/bin/ruby-gem; \

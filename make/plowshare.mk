@@ -32,14 +32,14 @@ PLOWSHARE_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 PLOWSHARE_DESCRIPTION=A command-line downloader and uploader for some of the most popular file sharing websites
 PLOWSHARE_SECTION=utils
 PLOWSHARE_PRIORITY=optional
-PLOWSHARE_DEPENDS=bash, libcurl, sed, recode, util-linux-ng
+PLOWSHARE_DEPENDS=bash, libcurl, sed, recode, util-linux, git, findutils
 PLOWSHARE_SUGGESTS=imagemagick, py25-pil, ossp-js, tesseract-ocr
 PLOWSHARE_CONFLICTS=
 
 #
 # PLOWSHARE_IPK_VERSION should be incremented when the ipk changes.
 #
-PLOWSHARE_IPK_VERSION=1
+PLOWSHARE_IPK_VERSION=4
 
 #
 # PLOWSHARE_CONFFILES should be a list of user-editable files
@@ -49,7 +49,10 @@ PLOWSHARE_IPK_VERSION=1
 # PLOWSHARE_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-#PLOWSHARE_PATCHES=$(PLOWSHARE_SOURCE_DIR)/configure.patch
+PLOWSHARE_PATCHES=\
+$(PLOWSHARE_SOURCE_DIR)/plowmod.patch \
+$(PLOWSHARE_SOURCE_DIR)/core.patch \
+$(PLOWSHARE_SOURCE_DIR)/conf_dir.patch \
 
 #
 # If the compilation of the package requires additional
@@ -129,14 +132,14 @@ $(PLOWSHARE_BUILD_DIR)/.configured: $(DL_DIR)/$(PLOWSHARE_SOURCE) $(PLOWSHARE_PA
 	$(PLOWSHARE_UNZIP) $(DL_DIR)/$(PLOWSHARE_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(PLOWSHARE_PATCHES)" ; \
 		then cat $(PLOWSHARE_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(PLOWSHARE_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(PLOWSHARE_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(PLOWSHARE_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(PLOWSHARE_DIR) $(@D) ; \
 	fi
 #	sed -i -e '/^USRDIR=/s|/usr/local|$(TARGET_PREFIX)|' $(@D)/setup.sh
 	find $(@D)/src -name '*.sh' | \
-		xargs sed -i -e '1s|#!.*/bash|#!$(TARGET_PREFIX)/bin/bash|'
+		xargs sed -i -e '1s|#!.*bash|#!$(TARGET_PREFIX)/bin/bash|'
 #	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(PLOWSHARE_CPPFLAGS)" \

@@ -38,7 +38,7 @@ MTOOLS_CONFLICTS=
 #
 # MTOOLS_IPK_VERSION should be incremented when the ipk changes.
 #
-MTOOLS_IPK_VERSION=1
+MTOOLS_IPK_VERSION=2
 
 #
 # MTOOLS_CONFFILES should be a list of user-editable files
@@ -196,7 +196,7 @@ $(MTOOLS_IPK_DIR)/CONTROL/control:
 #
 $(MTOOLS_IPK): $(MTOOLS_BUILD_DIR)/.built
 	rm -rf $(MTOOLS_IPK_DIR) $(BUILD_DIR)/mtools_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(MTOOLS_BUILD_DIR) prefix=$(MTOOLS_IPK_DIR)$(TARGET_PREFIX) install INSTALL_INFO=:
+	$(MAKE) -C $(MTOOLS_BUILD_DIR) prefix=$(MTOOLS_IPK_DIR)$(TARGET_PREFIX) install -j1 INSTALL_INFO=:
 	$(STRIP_COMMAND) $(MTOOLS_IPK_DIR)$(TARGET_PREFIX)/bin/mtools $(MTOOLS_IPK_DIR)$(TARGET_PREFIX)/bin/mkmanifest
 #	$(INSTALL) -d $(MTOOLS_IPK_DIR)$(TARGET_PREFIX)/etc/
 #	$(INSTALL) -m 644 $(MTOOLS_SOURCE_DIR)/mtools.conf $(MTOOLS_IPK_DIR)$(TARGET_PREFIX)/etc/mtools.conf

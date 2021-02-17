@@ -39,7 +39,7 @@ SPANDSP_CONFLICTS=
 #
 # SPANDSP_IPK_VERSION should be incremented when the ipk changes.
 #
-SPANDSP_IPK_VERSION=1
+SPANDSP_IPK_VERSION=3
 
 #
 # SPANDSP_CONFFILES should be a list of user-editable files
@@ -50,6 +50,9 @@ SPANDSP_IPK_VERSION=1
 # which they should be applied to the source code.
 #
 #SPANDSP_PATCHES=$(SPANDSP_SOURCE_DIR)/configure.patch
+ifeq ($(OPTWARE_TARGET), $(filter ct-ng-ppc-e500v2, $(OPTWARE_TARGET)))
+SPANDSP_PATCHES=$(SPANDSP_SOURCE_DIR)/powerpc_spe_fix.patch
+endif
 
 #
 # If the compilation of the package requires additional
@@ -113,7 +116,7 @@ $(SPANDSP_BUILD_DIR)/.configured: $(DL_DIR)/$(SPANDSP_SOURCE) $(SPANDSP_PATCHES)
 	$(SPANDSP_UNZIP) $(DL_DIR)/$(SPANDSP_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(SPANDSP_PATCHES)" ; \
 		then cat $(SPANDSP_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(SPANDSP_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(SPANDSP_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(SPANDSP_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(SPANDSP_DIR) $(@D) ; \

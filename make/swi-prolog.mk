@@ -30,14 +30,14 @@ SWI-PROLOG_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 SWI-PROLOG_DESCRIPTION=An LGPL comprehensive portable Prolog implementation.
 SWI-PROLOG_SECTION=lang
 SWI-PROLOG_PRIORITY=optional
-SWI-PROLOG_DEPENDS=libgmp, ncursesw, readline, zlib
+SWI-PROLOG_DEPENDS=libgmp, ncursesw, readline, zlib, openssl
 SWI-PROLOG_SUGGESTS=
 SWI-PROLOG_CONFLICTS=
 
 #
 # SWI-PROLOG_IPK_VERSION should be incremented when the ipk changes.
 #
-SWI-PROLOG_IPK_VERSION=2
+SWI-PROLOG_IPK_VERSION=4
 
 #
 # SWI-PROLOG_CONFFILES should be a list of user-editable files
@@ -47,8 +47,9 @@ SWI-PROLOG_IPK_VERSION=2
 # SWI-PROLOG_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
+SWI-PROLOG_PATCHES=$(SWI-PROLOG_SOURCE_DIR)/sgm_util_c_include_time_h.patch
 ifneq ($(HOSTCC), $(TARGET_CC))
-SWI-PROLOG_PATCHES=$(SWI-PROLOG_SOURCE_DIR)/src-configure.in.patch $(SWI-PROLOG_SOURCE_DIR)/packages-plld.sh.in.patch
+SWI-PROLOG_PATCHES+=$(SWI-PROLOG_SOURCE_DIR)/src-configure.in.patch $(SWI-PROLOG_SOURCE_DIR)/packages-plld.sh.in.patch
 endif
 
 #
@@ -145,7 +146,7 @@ ifneq ($(HOSTCC), $(TARGET_CC))
 		CMFLAGS="-fPIC" \
 		CIFLAGS="-O2 -pipe -I$(STAGING_INCLUDE_DIR)" \
 		LDFLAGS="-O2 $(STAGING_LDFLAGS) $(SWI-PROLOG_LDFLAGS)"
-	$(MAKE) -C $(@D)/hostbuild/$(SWI-PROLOG_DIR) all install DESTDIR=$(@D)/hostbuild
+	$(MAKE) -C $(@D)/hostbuild/$(SWI-PROLOG_DIR) all install DESTDIR=$(@D)/hostbuild -j1
 endif
 	touch $@
 
@@ -169,7 +170,7 @@ endif
 #
 $(SWI-PROLOG_BUILD_DIR)/.configured: $(DL_DIR)/$(SWI-PROLOG_SOURCE) $(SWI-PROLOG_PATCHES) $(SWI-PROLOG_BUILD_DIR)/.hostbuilt
 	@echo "=============== target swi-prolog configure ============"
-	$(MAKE) libgmp-stage ncurses-stage ncursesw-stage openssl-stage readline-stage zlib-stage
+	$(MAKE) libgmp-stage ncurses-stage ncursesw-stage openssl-stage readline-stage zlib-stage openssl-stage
 ifneq ($(HOSTCC), $(TARGET_CC))
 ifeq ($(LIBC_STYLE), uclibc)
 	sed -i -e '/ac_pthread_cpuclocks=/s/yes/no/g' $(@D)/src/configure.in
@@ -250,7 +251,7 @@ swi-prolog: $(SWI-PROLOG_BUILD_DIR)/.built
 #
 $(SWI-PROLOG_BUILD_DIR)/.staged: $(SWI-PROLOG_BUILD_DIR)/.core-built
 	rm -f $@
-	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install
+	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install -j1
 	touch $@
 
 swi-prolog-stage: $(SWI-PROLOG_BUILD_DIR)/.staged
@@ -288,9 +289,9 @@ $(SWI-PROLOG_IPK_DIR)/CONTROL/control:
 #
 $(SWI-PROLOG_IPK): $(SWI-PROLOG_BUILD_DIR)/.built
 	rm -rf $(SWI-PROLOG_IPK_DIR) $(BUILD_DIR)/swi-prolog_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(SWI-PROLOG_BUILD_DIR) install DESTDIR=$(SWI-PROLOG_IPK_DIR)
+	$(MAKE) -C $(SWI-PROLOG_BUILD_DIR) install DESTDIR=$(SWI-PROLOG_IPK_DIR) -j1
 	$(STRIP_COMMAND) $(SWI-PROLOG_IPK_DIR)$(TARGET_PREFIX)/lib/$(SWI-PROLOG_PL)-$(SWI-PROLOG_VERSION)/bin/$(SWI-PROLOG_TARGET)/*pl*
-	$(MAKE) -C $(SWI-PROLOG_BUILD_DIR)/packages install DESTDIR=$(SWI-PROLOG_IPK_DIR)
+	$(MAKE) -C $(SWI-PROLOG_BUILD_DIR)/packages install DESTDIR=$(SWI-PROLOG_IPK_DIR) -j1
 	rm $(SWI-PROLOG_IPK_DIR)$(TARGET_PREFIX)/lib/$(SWI-PROLOG_PL)-$(SWI-PROLOG_VERSION)/lib/$(SWI-PROLOG_TARGET)/lib*.a
 	(cd $(SWI-PROLOG_IPK_DIR)$(TARGET_PREFIX)/lib/$(SWI-PROLOG_PL)-$(SWI-PROLOG_VERSION); \
 		for f in `find . -name '*.so'`; do \

@@ -35,14 +35,14 @@ ROX-FILER_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 ROX-FILER_DESCRIPTION=ROX-Filer is a fast and powerful graphical file manager.
 ROX-FILER_SECTION=utilities
 ROX-FILER_PRIORITY=optional
-ROX-FILER_DEPENDS=gtk2, file
+ROX-FILER_DEPENDS=gtk2, file, sm
 ROX-FILER_SUGGESTS=
 ROX-FILER_CONFLICTS=
 
 #
 # ROX-FILER_IPK_VERSION should be incremented when the ipk changes.
 #
-ROX-FILER_IPK_VERSION=1
+ROX-FILER_IPK_VERSION=3
 
 #
 # ROX-FILER_CONFFILES should be a list of user-editable files
@@ -111,7 +111,7 @@ rox-filer-source: $(DL_DIR)/$(ROX-FILER_SOURCE) $(ROX-FILER_PATCHES)
 # shown below to make various patches to it.
 #
 $(ROX-FILER_BUILD_DIR)/.configured: $(DL_DIR)/$(ROX-FILER_SOURCE) $(ROX-FILER_PATCHES) make/rox-filer.mk
-	$(MAKE) gtk2-stage file-stage shared-mime-info-stage
+	$(MAKE) gtk2-stage file-stage shared-mime-info-stage sm-stage
 	rm -rf $(BUILD_DIR)/$(ROX-FILER_DIR) $(@D)
 	$(ROX-FILER_UNZIP) $(DL_DIR)/$(ROX-FILER_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(ROX-FILER_PATCHES)" ; \
@@ -141,6 +141,9 @@ $(ROX-FILER_BUILD_DIR)/.configured: $(DL_DIR)/$(ROX-FILER_SOURCE) $(ROX-FILER_PA
 	)
 #	$(PATCH_LIBTOOL) $(@D)/libtool
 	sed -i -e 's|-I/usr/include ||' -e '/mv "\$${PROG}"/s/.*/#\\/' $(@D)/ROX-Filer/Makefile
+ifneq (, $(filter buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
+	sed -i -e '/HAVE_SYS_INOTIFY_H/s|^|//|' $(@D)/ROX-Filer/config.h
+endif
 	touch $@
 
 rox-filer-unpack: $(ROX-FILER_BUILD_DIR)/.configured

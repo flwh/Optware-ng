@@ -17,11 +17,14 @@ POSTFIX_MAINTAINER=Matthias Appel <private_tweety@gmx.net>
 POSTFIX_DESCRIPTION=The Postfix mail system is an alternative to sendmail.
 POSTFIX_SECTION=util
 POSTFIX_PRIORITY=optional
-POSTFIX_DEPENDS=libdb, libnsl, pcre, cyrus-sasl, findutils, openssl
+POSTFIX_DEPENDS=libdb, pcre, cyrus-sasl, findutils, openssl
+ifneq ($(NO_LIBNSL), true)
+POSTFIX_DEPENDS += , libnsl
+endif
 POSTFIX_SUGGESTS=cyrus-imapd
 POSTFIX_CONFLICTS=xmail
 
-POSTFIX_IPK_VERSION=4
+POSTFIX_IPK_VERSION=5
 
 POSTFIX_CONFFILES=$(TARGET_PREFIX)/etc/aliases \
 		  $(TARGET_PREFIX)/etc/postfix/main.cf \
@@ -53,7 +56,10 @@ $(DL_DIR)/$(POSTFIX_SOURCE):
 postfix-source: $(DL_DIR)/$(POSTFIX_SOURCE) $(POSTFIX_PATCHES)
 
 $(POSTFIX_BUILD_DIR)/.configured: $(DL_DIR)/$(POSTFIX_SOURCE) $(POSTFIX_PATCHES) make/postfix.mk
-	$(MAKE) libdb-stage libnsl-stage pcre-stage cyrus-sasl-stage openssl-stage
+	$(MAKE) libdb-stage pcre-stage cyrus-sasl-stage openssl-stage
+ifneq ($(NO_LIBNSL), true)
+	$(MAKE) libnsl-stage
+endif
 	rm -rf $(BUILD_DIR)/$(POSTFIX_DIR) $(@D)
 	$(POSTFIX_UNZIP) $(DL_DIR)/$(POSTFIX_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	cat $(POSTFIX_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(POSTFIX_DIR) -p1
@@ -90,8 +96,8 @@ $(POSTFIX_BUILD_DIR)/.built: $(POSTFIX_BUILD_DIR)/.configured
 	rm -f $@
 	$(MAKE) -C $(@D)
 	(cd $(@D); \
-		sed -i 's/fmt/\$(TARGET_PREFIX)\/bin\/fmt/g' postfix-install; \
-		sed -i 's/cmp/\$(TARGET_PREFIX)\/bin\/cmp/g' postfix-install; \
+		sed -i 's|fmt|$(TARGET_PREFIX)/bin/fmt|g' postfix-install; \
+		sed -i 's|cmp|$(TARGET_PREFIX)/bin/cmp|g' postfix-install; \
 		rm -f conf/LICENSE; \
 		cp LICENSE conf/; \
 		rm -f README_FILES/RELEASE_NOTES; \
@@ -164,7 +170,7 @@ $(POSTFIX_IPK): $(POSTFIX_BUILD_DIR)/.built
 					sample_directory= \
 					readme_directory=$(TARGET_PREFIX)/share/doc/postfix/readme \
 					upgrade
-	/bin/sed -i 's/\(\bPATH=\)/\1\$(TARGET_PREFIX)\/bin:\$(TARGET_PREFIX)\/sbin:/g' $(POSTFIX_IPK_DIR)$(TARGET_PREFIX)/etc/postfix/post-install
+	/bin/sed -i 's|\(\bPATH=\)|\1$(TARGET_PREFIX)/bin:$(TARGET_PREFIX)/sbin:|g' $(POSTFIX_IPK_DIR)$(TARGET_PREFIX)/etc/postfix/post-install
 	$(INSTALL) -m 600 $(POSTFIX_SOURCE_DIR)/aliases $(POSTFIX_IPK_DIR)$(TARGET_PREFIX)/etc/aliases
 	$(INSTALL) -m 644 $(POSTFIX_SOURCE_DIR)/main.cf $(POSTFIX_IPK_DIR)$(TARGET_PREFIX)/etc/postfix/main.cf
 ifeq (${OPTWARE_TARGET}, vt4)

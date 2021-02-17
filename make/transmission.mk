@@ -24,8 +24,8 @@
 #
 # SVN releases also include transmissiond-dbg while official releases does not.
 #
-TRANSMISSION_SITE=https://transmission.cachefly.net
-TRANSMISSION_VERSION=2.84
+TRANSMISSION_SITE=https://github.com/transmission/transmission-releases/raw/master
+TRANSMISSION_VERSION=2.94
 
 #TRANSMISSION_SVN_REV=8696
 
@@ -42,7 +42,7 @@ TRANSMISSION_DESCRIPTION=Lightweight BitTorrent client and daemon, with web inte
 TRANSMISSION_GTK_DESCRIPTION=Transmission GTK+ torrent client
 TRANSMISSION_SECTION=net
 TRANSMISSION_PRIORITY=optional
-TRANSMISSION_DEPENDS=openssl, libcurl, libevent, zlib
+TRANSMISSION_DEPENDS=openssl, libcurl, libevent, zlib, start-stop-daemon
 ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
 TRANSMISSION_DEPENDS+=, libiconv
 endif
@@ -53,13 +53,18 @@ TRANSMISSION_CONFLICTS=
 #
 # TRANSMISSION_IPK_VERSION should be incremented when the ipk changes.
 #
-TRANSMISSION_IPK_VERSION=2
+TRANSMISSION_IPK_VERSION=1
 
 #
 # TRANSMISSION_CONFFILES should be a list of user-editable files
-TRANSMISSION_CONFFILES=$(TARGET_PREFIX)/etc/transmission-daemon/settings.json $(TARGET_PREFIX)/etc/init.d/S95transmission
+TRANSMISSION_CONFFILES=\
+$(TARGET_PREFIX)/etc/transmission-daemon/settings.json \
+$(TARGET_PREFIX)/etc/init.d/S95transmission \
+$(TARGET_PREFIX)/share/transmission/web/index.html
 
-TRANSMISSION_PATCHES = $(TRANSMISSION_SOURCE_DIR)/int64_switch.patch \
+TRANSMISSION_PATCHES=\
+$(TRANSMISSION_SOURCE_DIR)/int64_switch.patch \
+$(TRANSMISSION_SOURCE_DIR)/uclibc_system_quota.patch \
 
 TRANSMISSION_CONFIG_ENV ?=
 

@@ -26,8 +26,8 @@
 # from your name or email address.  If you leave MAINTAINER set to
 # "NSLU2 Linux" other developers will feel free to edit.
 #
-LIBCURL_SITE= http://curl.haxx.se/download
-LIBCURL_VERSION=7.24.0
+LIBCURL_SITE=http://curl.haxx.se/download
+LIBCURL_VERSION=7.58.0
 LIBCURL_SOURCE=curl-$(LIBCURL_VERSION).tar.gz
 LIBCURL_DIR=curl-$(LIBCURL_VERSION)
 LIBCURL_UNZIP=zcat
@@ -35,13 +35,13 @@ LIBCURL_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 LIBCURL_DESCRIPTION=Curl is a command line tool for transferring files with URL syntax, supporting FTP, FTPS, HTTP, HTTPS, GOPHER, TELNET, DICT, FILE and LDAP. Curl supports HTTPS certificates, HTTP POST, HTTP PUT, FTP uploading, kerberos, HTTP form based upload, proxies, cookies, user+password authentication, file transfer resume, http proxy tunneling and a busload of other useful tricks.
 LIBCURL_SECTION=libs
 LIBCURL_PRIORITY=optional
-LIBCURL_DEPENDS=openssl, zlib
+LIBCURL_DEPENDS=openssl, zlib, rtmpdump
 LIBCURL_CONFLICTS=
 
 #
 # LIBCURL_IPK_VERSION should be incremented when the ipk changes.
 #
-LIBCURL_IPK_VERSION=1
+LIBCURL_IPK_VERSION=2
 
 #
 # LIBCURL_CONFFILES should be a list of user-editable files
@@ -51,7 +51,7 @@ LIBCURL_CONFFILES=#$(TARGET_PREFIX)/etc/libcurl.conf $(TARGET_PREFIX)/etc/init.d
 # LIBCURL_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-LIBCURL_PATCHES=$(LIBCURL_SOURCE_DIR)/timeval-uclibc.patch
+LIBCURL_PATCHES=
 
 #
 # If the compilation of the package requires additional
@@ -110,7 +110,7 @@ libcurl-source: $(DL_DIR)/$(LIBCURL_SOURCE) $(LIBCURL_PATCHES)
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
 $(LIBCURL_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBCURL_SOURCE) $(LIBCURL_PATCHES) make/libcurl.mk
-	$(MAKE) openssl-stage zlib-stage
+	$(MAKE) openssl-stage zlib-stage rtmpdump-stage
 	rm -rf $(BUILD_DIR)/$(LIBCURL_DIR) $(@D)
 	$(LIBCURL_UNZIP) $(DL_DIR)/$(LIBCURL_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(LIBCURL_PATCHES)"; then \
@@ -151,11 +151,12 @@ endif
 		--disable-telnet \
 		--disable-verbose \
 		--with-random="/dev/urandom" \
-		--with-ssl="$(STAGING_DIR)" \
+		--with-ssl="$(STAGING_PREFIX)" \
 		--without-gnutls \
 		--without-krb4 \
 		--without-libidn \
-		--with-zlib="$(STAGING_DIR)" \
+		--with-zlib="$(STAGING_PREFIX)" \
+		--with-librtmp=$(STAGING_PREFIX) \
 		--with-ca-bundle=$(TARGET_PREFIX)/share/curl/curl-ca-bundle.crt \
 	)
 	$(PATCH_LIBTOOL) $(@D)/libtool
@@ -241,12 +242,14 @@ $(LIBCURL_IPK) $(LIBCURL-DEV_IPK): $(LIBCURL_BUILD_DIR)/.built
 	rm -rf $(LIBCURL-DEV_IPK_DIR) $(BUILD_DIR)/libcurl-dev_*_$(TARGET_ARCH).ipk
 	$(MAKE) -C $(LIBCURL_BUILD_DIR) DESTDIR=$(LIBCURL_IPK_DIR) install-strip
 	rm -f $(LIBCURL_IPK_DIR)$(TARGET_PREFIX)/lib/libcurl.a $(LIBCURL_IPK_DIR)$(TARGET_PREFIX)/lib/libcurl.la
+	sed -i -e 's|$(TARGET_CC)|$(TARGET_PREFIX)/bin/gcc|g' -e 's|$(STAGING_PREFIX)|$(TARGET_PREFIX)|g' \
+		-e 's|$(STAGING_DIR)/lib|$(TARGET_PREFIX)/lib|g' $(LIBCURL_IPK_DIR)$(TARGET_PREFIX)/bin/curl-config
 	$(INSTALL) -d $(LIBCURL_IPK_DIR)$(TARGET_PREFIX)/share/curl
 	$(INSTALL) $(LIBCURL_BUILD_DIR)/lib/ca-bundle.crt $(LIBCURL_IPK_DIR)$(TARGET_PREFIX)/share/curl/curl-ca-bundle.crt
 	$(MAKE) $(LIBCURL_IPK_DIR)/CONTROL/control
 	echo $(LIBCURL_CONFFILES) | sed -e 's/ /\n/g' > $(LIBCURL_IPK_DIR)/CONTROL/conffiles
 	$(INSTALL) -d $(LIBCURL-DEV_IPK_DIR)$(TARGET_PREFIX)/share/man $(LIBCURL-DEV_IPK_DIR)$(TARGET_PREFIX)/lib
-	mv $(LIBCURL_IPK_DIR)$(TARGET_PREFIX)/share/man/man3 $(LIBCURL-DEV_IPK_DIR)$(TARGET_PREFIX)/share/man/
+	mv $(LIBCURL_IPK_DIR)$(TARGET_PREFIX)/share/man/man1 $(LIBCURL-DEV_IPK_DIR)$(TARGET_PREFIX)/share/man/
 	mv $(LIBCURL_IPK_DIR)$(TARGET_PREFIX)/include $(LIBCURL-DEV_IPK_DIR)$(TARGET_PREFIX)/
 	mv $(LIBCURL_IPK_DIR)$(TARGET_PREFIX)/lib/pkgconfig $(LIBCURL-DEV_IPK_DIR)$(TARGET_PREFIX)/lib/
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(LIBCURL_IPK_DIR)

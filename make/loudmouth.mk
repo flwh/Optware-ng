@@ -20,11 +20,11 @@
 # from your name or email address.  If you leave MAINTAINER set to
 # "NSLU2 Linux" other developers will feel free to edit.
 #
-LOUDMOUTH_SITE=http://ftp.imendio.com/pub/imendio/loudmouth/src
-LOUDMOUTH_VERSION=1.4.3
-LOUDMOUTH_SOURCE=loudmouth-$(LOUDMOUTH_VERSION).tar.gz
+LOUDMOUTH_SITE=https://mcabber.com/files/loudmouth/
+LOUDMOUTH_VERSION=1.5.3
+LOUDMOUTH_SOURCE=loudmouth-$(LOUDMOUTH_VERSION).tar.bz2
 LOUDMOUTH_DIR=loudmouth-$(LOUDMOUTH_VERSION)
-LOUDMOUTH_UNZIP=zcat
+LOUDMOUTH_UNZIP=bzcat
 LOUDMOUTH_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 LOUDMOUTH_DESCRIPTION=Loudmouth is a lightweight and easy-to-use C library for programming with the Jabber protocol.
 LOUDMOUTH_SECTION=net

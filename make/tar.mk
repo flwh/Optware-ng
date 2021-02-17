@@ -20,16 +20,16 @@
 # You should change all these variables to suit your package.
 #
 TAR_SITE=http://ftp.gnu.org/gnu/tar
-TAR_VERSION ?= 1.26
-TAR_IPK_VERSION ?= 1
-TAR_SOURCE=tar-$(TAR_VERSION).tar.bz2
+TAR_VERSION=1.30
+TAR_IPK_VERSION=1
+TAR_SOURCE=tar-$(TAR_VERSION).tar.xz
 TAR_DIR=tar-$(TAR_VERSION)
-TAR_UNZIP=bzcat
+TAR_UNZIP=xzcat
 TAR_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 TAR_DESCRIPTION=heavyweight version of the Tape ARchiver
 TAR_SECTION=util
 TAR_PRIORITY=optional
-TAR_DEPENDS=
+TAR_DEPENDS=libacl
 TAR_SUGGESTS=bzip2, gzip, xz-utils
 TAR_CONFLICTS=
 
@@ -39,9 +39,6 @@ TAR_CONFLICTS=
 # compilation or linking flags, then list them here.
 #
 TAR_CPPFLAGS=
-ifeq ($(OPTWARE_TARGET),wl500g)
-TAR_CPPFLAGS+=-DMB_CUR_MAX=1
-endif
 TAR_LDFLAGS=
 
 #
@@ -91,6 +88,7 @@ tar-source: $(DL_DIR)/$(TAR_SOURCE) $(TAR_PATCHES)
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
 $(TAR_BUILD_DIR)/.configured: $(DL_DIR)/$(TAR_SOURCE) $(TAR_PATCHES) make/tar.mk
+	$(MAKE) libacl-stage
 	rm -rf $(BUILD_DIR)/$(TAR_DIR) $(@D)
 	$(TAR_UNZIP) $(DL_DIR)/$(TAR_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	mv $(BUILD_DIR)/$(TAR_DIR) $(@D)
@@ -158,7 +156,7 @@ $(TAR_IPK_DIR)/CONTROL/control:
 $(TAR_IPK): $(TAR_BUILD_DIR)/.built
 	rm -rf $(TAR_IPK_DIR) $(BUILD_DIR)/tar_*_$(TARGET_ARCH).ipk
 	$(MAKE) -C $(TAR_BUILD_DIR) DESTDIR=$(TAR_IPK_DIR) install-strip
-	rm -f $(TAR_IPK_DIR)$(TARGET_PREFIX)/share/info/dir
+	rm -fr $(TAR_IPK_DIR)$(TARGET_PREFIX)/share/info
 	mv $(TAR_IPK_DIR)$(TARGET_PREFIX)/bin/tar $(TAR_IPK_DIR)$(TARGET_PREFIX)/bin/gnutar
 	mv $(TAR_IPK_DIR)$(TARGET_PREFIX)/libexec/rmt $(TAR_IPK_DIR)$(TARGET_PREFIX)/libexec/rmt-tar
 	$(MAKE) $(TAR_IPK_DIR)/CONTROL/control

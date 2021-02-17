@@ -21,7 +21,7 @@
 # "NSLU2 Linux" other developers will feel free to edit.
 #
 ICECAST_SITE=http://downloads.xiph.org/releases/icecast
-ICECAST_VERSION=2.3.2
+ICECAST_VERSION=2.4.3
 ICECAST_SOURCE=icecast-$(ICECAST_VERSION).tar.gz
 ICECAST_DIR=icecast-$(ICECAST_VERSION)
 ICECAST_UNZIP=zcat
@@ -29,14 +29,14 @@ ICECAST_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 ICECAST_DESCRIPTION=A free server software for streaming multimedia.
 ICECAST_SECTION=multimedia
 ICECAST_PRIORITY=optional
-ICECAST_DEPENDS=libcurl, libogg, libvorbis, libxslt, speex
+ICECAST_DEPENDS=libcurl, libogg, libtheora, libvorbis, libxslt, speex
 ICECAST_SUGGESTS=
 ICECAST_CONFLICTS=
 
 #
 # ICECAST_IPK_VERSION should be incremented when the ipk changes.
 #
-ICECAST_IPK_VERSION=1
+ICECAST_IPK_VERSION=2
 
 #
 # ICECAST_CONFFILES should be a list of user-editable files
@@ -46,7 +46,7 @@ ICECAST_IPK_VERSION=1
 # ICECAST_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-ICECAST_PATCHES=\
+#ICECAST_PATCHES=\
 $(ICECAST_SOURCE_DIR)/configure.patch \
 
 #
@@ -106,11 +106,7 @@ icecast-source: $(DL_DIR)/$(ICECAST_SOURCE) $(ICECAST_PATCHES)
 # shown below to make various patches to it.
 #
 $(ICECAST_BUILD_DIR)/.configured: $(DL_DIR)/$(ICECAST_SOURCE) $(ICECAST_PATCHES) make/icecast.mk
-	$(MAKE) libcurl-stage
-	$(MAKE) libogg-stage
-	$(MAKE) libvorbis-stage
-	$(MAKE) libxslt-stage
-	$(MAKE) speex-stage
+	$(MAKE) libcurl-stage libogg-stage libtheora-stage libvorbis-stage libxslt-stage speex-stage
 	rm -rf $(BUILD_DIR)/$(ICECAST_DIR) $(@D)
 	$(ICECAST_UNZIP) $(DL_DIR)/$(ICECAST_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(ICECAST_PATCHES)" ; \
@@ -132,7 +128,7 @@ $(ICECAST_BUILD_DIR)/.configured: $(DL_DIR)/$(ICECAST_SOURCE) $(ICECAST_PATCHES)
 		--with-curl=$(STAGING_PREFIX) \
 		--with-ogg=$(STAGING_PREFIX) \
 		--with-speex=$(STAGING_PREFIX) \
-		--without-theora \
+		--with-theora=$(STAGING_PREFIX) \
 		--with-vorbis=$(STAGING_PREFIX) \
 		--with-xslt-config=$(STAGING_PREFIX)/bin/xslt-config \
 		--disable-nls \

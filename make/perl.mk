@@ -1,18 +1,8 @@
-# override in platforms/packages-$(OPTWARE_TARGET).mk
-PERL_MAJOR_VER ?= 5.8
+PERL_VERSION=5.26.1
+PERL_MAJOR_VER := $(shell echo $(PERL_VERSION) | cut -d'.' -f1-2)
+PERL_IPK_VERSION=4
 
-ifeq (5.8, $(PERL_MAJOR_VER))
-PERL_VERSION=5.8.8
-PERL_IPK_VERSION=24
-else ifeq (5.20, $(PERL_MAJOR_VER))
-PERL_VERSION=5.20.1
-PERL_IPK_VERSION=1
-else
-PERL_VERSION=5.10.0
-PERL_IPK_VERSION=6
-endif
-
-PERL_SITE=http://ftp.funet.fi/pub/CPAN/src
+PERL_SITE=http://www.cpan.org/src/5.0
 PERL_SOURCE=perl-$(PERL_VERSION).tar.gz
 PERL_DIR=perl-$(PERL_VERSION)
 PERL_UNZIP=zcat
@@ -20,7 +10,7 @@ PERL_PRIORITY=optional
 PERL_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 PERL_SECTION=interpreters
 PERL_DESCRIPTION=Practical Extraction and Report Language.
-PERL_DEPENDS=libdb, gdbm
+PERL_DEPENDS=gdbm
 PERL_SUGGESTS=
 PERL_CONFLICTS=
 

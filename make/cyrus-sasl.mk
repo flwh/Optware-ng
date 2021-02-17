@@ -21,8 +21,8 @@
 # from your name or email address.  If you leave MAINTAINER set to
 # "NSLU2 Linux" other developers will feel free to edit.
 #
-CYRUS-SASL_SITE=ftp://ftp.andrew.cmu.edu/pub/cyrus-mail
-CYRUS-SASL_VERSION=2.1.25
+CYRUS-SASL_SITE=ftp://ftp.cyrusimap.org/cyrus-sasl
+CYRUS-SASL_VERSION=2.1.26
 CYRUS-SASL_SOURCE=cyrus-sasl-$(CYRUS-SASL_VERSION).tar.gz
 CYRUS-SASL_DIR=cyrus-sasl-$(CYRUS-SASL_VERSION)
 CYRUS-SASL_UNZIP=zcat
@@ -30,10 +30,10 @@ CYRUS-SASL_MAINTAINER=Matthias Appel <private_tweety@gmx.net>
 CYRUS-SASL_DESCRIPTION=Provides client or server side authentication (see RFC 2222).
 CYRUS-SASL_SECTION=util
 CYRUS-SASL_PRIORITY=optional
-CYRUS-SASL_DEPENDS=psmisc
+CYRUS-SASL_DEPENDS=busybox-base
 CYRUS-SASL_CONFLICTS=
 
-CYRUS-SASL_IPK_VERSION=1
+CYRUS-SASL_IPK_VERSION=3
 
 #
 # CYRUS-SASL_CONFFILES should be a list of user-editable files
@@ -45,7 +45,7 @@ CYRUS-SASL_CONFFILES=$(TARGET_PREFIX)/etc/init.d/S52saslauthd
 #
 CYRUS-SASL_PATCHES=  $(CYRUS-SASL_SOURCE_DIR)/configure-powerpc.patch \
   $(CYRUS-SASL_SOURCE_DIR)/include-Makefile.in.patch \
-  $(CYRUS-SASL_SOURCE_DIR)/db_berkeley.patch \
+#$(CYRUS-SASL_SOURCE_DIR)/db_berkeley.patch \
 #$(CYRUS-SASL_SOURCE_DIR)/Makefile.in.patch
 
 CYRUS-SASL_BUILD_DIR=$(BUILD_DIR)/cyrus-sasl
@@ -122,7 +122,7 @@ $(CYRUS-SASL_BUILD_DIR)/.configured: $(DL_DIR)/$(CYRUS-SASL_SOURCE) $(CYRUS-SASL
 		--disable-nls \
 		--disable-static \
 	)
-	$(PATCH_LIBTOOL) $(@D)/libtool
+	-$(PATCH_LIBTOOL) $(@D)/libtool
 	sed -i -e 's/#elif WITH_DES/#elif defined WITH_DES/' $(@D)/plugins/digestmd5.c
 	touch $@
 
@@ -133,7 +133,7 @@ cyrus-sasl-unpack: $(CYRUS-SASL_BUILD_DIR)/.configured
 #
 $(CYRUS-SASL_BUILD_DIR)/.built: $(CYRUS-SASL_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(@D) HOSTCC=$(HOSTCC)
+	$(MAKE) -C $(@D) HOSTCC=$(HOSTCC) -j 1
 	touch $@
 
 #
@@ -146,7 +146,7 @@ cyrus-sasl cyrus-sasl-libs: $(CYRUS-SASL_BUILD_DIR)/.built
 #
 $(CYRUS-SASL_BUILD_DIR)/.staged: $(CYRUS-SASL_BUILD_DIR)/.built
 	rm -f $@
-	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install
+	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install -j 1
 	rm -f $(STAGING_LIB_DIR)/libsasl2.la
 	touch $@
 
@@ -202,7 +202,7 @@ $(CYRUS-SASL-LIBS_IPK_DIR)/CONTROL/control:
 $(CYRUS-SASL_IPK): $(CYRUS-SASL_BUILD_DIR)/.built
 	rm -rf $(CYRUS-SASL_IPK_DIR) $(BUILD_DIR)/cyrus-sasl_*_$(TARGET_ARCH).ipk
 	rm -rf $(CYRUS-SASL-LIBS_IPK_DIR) $(BUILD_DIR)/cyrus-sasl-libs_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(CYRUS-SASL_BUILD_DIR) DESTDIR=$(CYRUS-SASL_IPK_DIR) install-strip
+	$(MAKE) -C $(CYRUS-SASL_BUILD_DIR) DESTDIR=$(CYRUS-SASL_IPK_DIR) install-strip -j 1
 	rm -f $(CYRUS-SASL_IPK_DIR)$(TARGET_PREFIX)/lib/libsasl2.la
 	rm -f $(CYRUS-SASL_IPK_DIR)$(TARGET_PREFIX)/lib/sasl2/*.la
 	find $(CYRUS-SASL_IPK_DIR) -type d -exec chmod go+rx {} \;

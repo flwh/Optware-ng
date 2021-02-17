@@ -34,7 +34,7 @@ DISTCC_CONFLICTS=
 #
 # DISTCC_IPK_VERSION should be incremented when the ipk changes.
 #
-DISTCC_IPK_VERSION=2
+DISTCC_IPK_VERSION=3
 
 #
 # DISTCC_PATCHES should list any patches, in the the order in
@@ -168,7 +168,7 @@ $(DISTCC_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 $(DISTCC_IPK): $(DISTCC_BUILD_DIR)/.built
-	rm -rf $(DISTCC_IPK_DIR) $(DISTCC_IPK)
+	rm -rf $(DISTCC_IPK_DIR) $(BUILD_DIR)/distcc_*_$(TARGET_ARCH).ipk
 	$(MAKE) -C $(DISTCC_BUILD_DIR) install \
 		DESTDIR=$(DISTCC_IPK_DIR) \
 		INCLUDESERVER_PYTHON=$(HOST_STAGING_PREFIX)/bin/python2.7

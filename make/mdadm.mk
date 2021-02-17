@@ -20,7 +20,13 @@
 # You should change all these variables to suit your package.
 #
 MDADM_SITE=https://www.kernel.org/pub/linux/utils/raid/mdadm
-MDADM_VERSION=3.3.2
+ifneq ($(OPTWARE_TARGET), $(filter buildroot-mipsel-ng buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
+MDADM_VERSION=3.4
+MDADM_IPK_VERSION=2
+else
+MDADM_VERSION=3.2.6
+MDADM_IPK_VERSION=3
+endif
 MDADM_SOURCE=mdadm-$(MDADM_VERSION).tar.gz
 MDADM_DIR=mdadm-$(MDADM_VERSION)
 MDADM_UNZIP=zcat
@@ -35,7 +41,7 @@ MDADM_CONFLICTS=
 #
 # MDADM_IPK_VERSION should be incremented when the ipk changes.
 #
-MDADM_IPK_VERSION=1
+#MDADM_IPK_VERSION=2 # set above
 
 #
 # MDADM_PATCHES should list any patches, in the the order in
@@ -162,7 +168,7 @@ $(MDADM_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 $(MDADM_IPK): $(MDADM_BUILD_DIR)/.built
-	rm -rf $(MDADM_IPK_DIR) $(MDADM_IPK)
+	rm -rf $(MDADM_IPK_DIR) $(BUILD_DIR)/mdadm_*_$(TARGET_ARCH).ipk
 	$(INSTALL) -d $(MDADM_IPK_DIR)$(TARGET_PREFIX)/sbin
 	$(INSTALL) -d $(MDADM_IPK_DIR)$(TARGET_PREFIX)/share/man/man8
 	$(INSTALL) -d $(MDADM_IPK_DIR)$(TARGET_PREFIX)/share/man/man4

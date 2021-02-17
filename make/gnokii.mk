@@ -36,7 +36,7 @@ GNOKII_SMSD_MYSQL_CONFLICTS=
 #
 # GNOKII_IPK_VERSION should be incremented when the ipk changes.
 #
-GNOKII_IPK_VERSION=1
+GNOKII_IPK_VERSION=3
 
 #
 # GNOKII_CONFFILES should be a list of user-editable files
@@ -47,7 +47,8 @@ GNOKII_IPK_VERSION=1
 # GNOKII_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-# GNOKII_PATCHES=$(GNOKII_SOURCE_DIR)/configure.patch
+GNOKII_PATCHES=\
+$(GNOKII_SOURCE_DIR)/local_atoi_static_inline.patch \
 
 #
 # If the compilation of the package requires additional
@@ -120,18 +121,17 @@ gnokii-source: $(DL_DIR)/$(GNOKII_SOURCE) $(GNOKII_PATCHES)
 # shown below to make various patches to it.
 #
 $(GNOKII_BUILD_DIR)/.configured: $(DL_DIR)/$(GNOKII_SOURCE) $(GNOKII_PATCHES) make/gnokii.mk
-	$(MAKE) libusb-stage bluez-libs-stage
-	$(MAKE) glib-stage mysql-stage ncurses-stage readline-stage
+	$(MAKE) intltool-stage libusb-stage bluez-libs-stage glib-stage mysql-stage ncurses-stage readline-stage
 	rm -rf $(BUILD_DIR)/$(GNOKII_DIR) $(@D)
 	$(GNOKII_UNZIP) $(DL_DIR)/$(GNOKII_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(GNOKII_PATCHES)" ; \
 		then cat $(GNOKII_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(GNOKII_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(GNOKII_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(GNOKII_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(GNOKII_DIR) $(@D) ; \
 	fi
-#	$(AUTORECONF1.10) -vif $(@D)
+	$(AUTORECONF1.10) -vif $(@D)
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(GNOKII_CPPFLAGS)" \
@@ -148,6 +148,7 @@ $(GNOKII_BUILD_DIR)/.configured: $(DL_DIR)/$(GNOKII_SOURCE) $(GNOKII_PATCHES) ma
 		--without-x \
 		--disable-nls \
 		--disable-static \
+		--disable-libpcsclite \
 	)
 	$(PATCH_LIBTOOL) $(@D)/libtool
 	touch $@

@@ -15,10 +15,10 @@
 # You should change all these variables to suit your package.
 #
 EXPAT_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/expat
-EXPAT_VERSION=2.0.1
-EXPAT_SOURCE=expat-$(EXPAT_VERSION).tar.gz
+EXPAT_VERSION=2.2.0
+EXPAT_SOURCE=expat-$(EXPAT_VERSION).tar.bz2
 EXPAT_DIR=expat-$(EXPAT_VERSION)
-EXPAT_UNZIP=zcat
+EXPAT_UNZIP=bzcat
 EXPAT_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 EXPAT_DESCRIPTION=XML Parser library
 EXPAT_SECTION=libraries
@@ -100,6 +100,8 @@ $(EXPAT_BUILD_DIR)/.configured: $(DL_DIR)/$(EXPAT_SOURCE) $(EXPAT_PATCHES) make/
 	$(EXPAT_UNZIP) $(DL_DIR)/$(EXPAT_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 #	cat $(EXPAT_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(EXPAT_DIR) -p1
 	mv $(BUILD_DIR)/$(EXPAT_DIR) $(@D)
+	rm -f $(@D)/conftools/libtool.m4
+	$(AUTORECONF1.10) -vif $(@D)
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(EXPAT_CPPFLAGS)" \

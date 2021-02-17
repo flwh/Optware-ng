@@ -19,32 +19,43 @@
 #
 # You should change all these variables to suit your package.
 #
-CUPS_VERSION=2.0.1
-CUPS_SITE=https://www.cups.org/software/$(CUPS_VERSION)
-CUPS_SOURCE=cups-$(CUPS_VERSION)-source.tar.bz2
+CUPS_VERSION=2.2.6
+CUPS_SITE=https://github.com/apple/cups/releases/download/v$(CUPS_VERSION)
+CUPS_SOURCE=cups-$(CUPS_VERSION)-source.tar.gz
 CUPS_DIR=cups-$(CUPS_VERSION)
-CUPS_UNZIP=bzcat
+CUPS_UNZIP=zcat
 CUPS_MAINTAINER=Inge Arnesen <inge.arnesen@gmail.com>
 CUPS_DESCRIPTION=Common Unix Printing System
+LIBCUPS_DESCRIPTION=Common Unix Printing System - Core library
+LIBCUPSCGI_DESCRIPTION=Common Unix Printing System - CGI library
+LIBCUPSIMAGE_DESCRIPTION=Common Unix Printing System - IMAGE library
+LIBCUPSMIME_DESCRIPTION=Common Unix Printing System - MIME library
+LIBCUPSPPDC_DESCRIPTION=Common Unix Printing System - PPDC library
 CUPS_SECTION=net
 CUPS_PRIORITY=optional
-CUPS_DEPENDS=libjpeg, libpng, libtiff, openssl, zlib, psmisc
+LIBCUPS_DEPENDS=zlib, libavahi-common, libavahi-client
+ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
+LIBCUPS_DEPENDS+=, libiconv
+endif
+ifeq (gnutls, $(filter gnutls, $(PACKAGES)))
+LIBCUPS_DEPENDS+=, gnutls
+endif
+LIBCUPSCGI_DEPENDS=libcups
+LIBCUPSIMAGE_DEPENDS=libcups
+LIBCUPSMIME_DEPENDS=libcups
+LIBCUPSPPDC_DEPENDS=libcups, libstdc++
+CUPS_DEPENDS=libcups, libcupscgi, libcupsimage, libcupsmime, libcupsppdc, libjpeg, libpng, libtiff, openssl, psmisc, libusb1, dbus, avahi, libacl, start-stop-daemon
 ifeq (openldap, $(filter openldap, $(PACKAGES)))
 CUPS_DEPENDS+=, openldap-libs
 endif
-ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
-CUPS_DEPENDS+=, libiconv
-endif
-ifeq (gnutls, $(filter gnutls, $(PACKAGES)))
-CUPS_DEPENDS+=, gnutls
-endif
-CUPS_SUGGESTS=
+
+CUPS_SUGGESTS=xinetd, samba36
 CUPS_CONFLICTS=
 
 #
 # CUPS_IPK_VERSION should be incremented when the ipk changes.
 #
-CUPS_IPK_VERSION=1
+CUPS_IPK_VERSION=3
 
 CUPS_DOC_DESCRIPTION=Common Unix Printing System documentation.
 CUPS-DEV_DESCRIPTION=Development files for CUPS
@@ -53,14 +64,66 @@ CUPS-DEV_DESCRIPTION=Development files for CUPS
 # CUPS_CONFFILES should be a list of user-editable files
 CUPS_CONFFILES=$(TARGET_PREFIX)/etc/cups/cupsd.conf $(TARGET_PREFIX)/etc/cups/printers.conf \
 		$(TARGET_PREFIX)/etc/cups/cups-files.conf $(TARGET_PREFIX)/etc/cups/printers.conf \
-		$(TARGET_PREFIX)/etc/cups/snmp.conf $(TARGET_PREFIX)/etc/cups/mime.types $(TARGET_PREFIX)/etc/cups/mime.convs
+		$(TARGET_PREFIX)/etc/cups/snmp.conf $(TARGET_PREFIX)/share/cups/mime/mime.types $(TARGET_PREFIX)/share/cups/mime/mime.convs \
+		$(TARGET_PREFIX)/etc/init.d/S88cupsd \
+		$(TARGET_PREFIX)/etc/xinetd.d/cups-lpd
 
 #
 # CUPS_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
 #CUPS_PATCHES=$(CUPS_SOURCE_DIR)/man-Makefile.patch $(CUPS_SOURCE_DIR)/ppdc-Makefile.patch
-CUPS_PATCHES=$(CUPS_SOURCE_DIR)/build_without_gnutls.patch
+CUPS_PATCHES=\
+$(CUPS_SOURCE_DIR)/debian/pwg-raster-attributes.patch \
+$(CUPS_SOURCE_DIR)/debian/manpage-hyphen-minus.patch \
+$(CUPS_SOURCE_DIR)/debian/rootbackends-worldreadable.patch \
+$(CUPS_SOURCE_DIR)/debian/fixes-for-jobs-with-multiple-files-and-multiple-formats.patch \
+$(CUPS_SOURCE_DIR)/debian/tests-ignore-warnings.patch \
+$(CUPS_SOURCE_DIR)/debian/tests-ignore-usb-crash.patch \
+$(CUPS_SOURCE_DIR)/debian/tests-ignore-kfreebsd-amd64-not-a-pdf.patch \
+$(CUPS_SOURCE_DIR)/debian/tests-ignore-ipv6-address-family-not-supported.patch \
+$(CUPS_SOURCE_DIR)/debian/tests-ignore-kfreebsd-unable-to-write-uncompressed-print-data.patch \
+$(CUPS_SOURCE_DIR)/debian/test-i18n-nonlinux.patch \
+$(CUPS_SOURCE_DIR)/debian/tests-wait-on-unfinished-jobs-everytime.patch \
+$(CUPS_SOURCE_DIR)/debian/tests-fix-ppdLocalize-on-unclean-env.patch \
+$(CUPS_SOURCE_DIR)/debian/tests-use-ipv4-lo-address.patch \
+$(CUPS_SOURCE_DIR)/debian/tests-make-lpstat-call-reproducible.patch \
+$(CUPS_SOURCE_DIR)/debian/tests-no-pdftourf.patch \
+$(CUPS_SOURCE_DIR)/debian/move-cupsd-conf-default-to-share.patch \
+$(CUPS_SOURCE_DIR)/debian/drop_unnecessary_dependencies.patch \
+$(CUPS_SOURCE_DIR)/debian/read-embedded-options-from-incoming-postscript-and-add-to-ipp-attrs.patch \
+$(CUPS_SOURCE_DIR)/debian/cups-deviced-allow-device-ids-with-newline.patch \
+$(CUPS_SOURCE_DIR)/debian/airprint-support.patch \
+$(CUPS_SOURCE_DIR)/debian/cups-snmp-oids-device-id-hp-ricoh.patch \
+$(CUPS_SOURCE_DIR)/debian/no-conffile-timestamp.patch \
+$(CUPS_SOURCE_DIR)/debian/removecvstag.patch \
+$(CUPS_SOURCE_DIR)/debian/rename-systemd-units.patch \
+$(CUPS_SOURCE_DIR)/debian/do-not-broadcast-with-hostnames.patch \
+$(CUPS_SOURCE_DIR)/debian/reactivate_recommended_driver.patch \
+$(CUPS_SOURCE_DIR)/debian/logfiles_adm_readable.patch \
+$(CUPS_SOURCE_DIR)/debian/default_log_settings.patch \
+$(CUPS_SOURCE_DIR)/debian/confdirperms.patch \
+$(CUPS_SOURCE_DIR)/debian/printer-filtering.patch \
+$(CUPS_SOURCE_DIR)/debian/show-compile-command-lines.patch \
+$(CUPS_SOURCE_DIR)/debian/log-debug-history-nearly-unlimited.patch \
+$(CUPS_SOURCE_DIR)/debian/cupsd-set-default-for-SyncOnClose-to-Yes.patch \
+$(CUPS_SOURCE_DIR)/debian/cups-set-default-error-policy-retry-job.patch \
+$(CUPS_SOURCE_DIR)/debian/man-cups-lpd-drop-dangling-references.patch \
+$(CUPS_SOURCE_DIR)/debian/debianize_cups-config.patch \
+$(CUPS_SOURCE_DIR)/debian/0037-Build-mantohtml-with-the-build-architecture-compiler.patch \
+$(CUPS_SOURCE_DIR)/debian/manpage-translations.patch \
+$(CUPS_SOURCE_DIR)/debian/0039-The-lp-and-lpr-commands-now-provide-better-error-mes.patch \
+$(CUPS_SOURCE_DIR)/manpage-po4a.patch \
+$(CUPS_SOURCE_DIR)/cupsd-set-default-for-RIPCache-to-auto.patch \
+#$(CUPS_SOURCE_DIR)/optware_pidfile.patch \
+#$(CUPS_SOURCE_DIR)/build_without_gnutls.patch
+
+CUPS_HOST_PATCHES=\
+$(CUPS_PATCHES) \
+
+CUPS_TARGET_PATCHES=\
+$(CUPS_PATCHES) \
+$(CUPS_SOURCE_DIR)/ppdc.patch \
 
 ifeq ($(LIBC_STYLE), uclibc)
 ifneq ($(OPTWARE_TARGET), ts101)
@@ -94,10 +157,7 @@ ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
 CUPS_LDFLAGS+= -liconv
 endif
 
-ifeq ($(OPTWARE_TARGET), $(filter syno-e500, $(OPTWARE_TARGET)))
-CUPS_CONFIG_OPTS=--disable-pam
-endif
-ifeq (libiconv, $(filter gnutls, $(PACKAGES)))
+ifeq (gnutls, $(filter gnutls, $(PACKAGES)))
 CUPS_CONFIG_OPTS+= --enable-gnutls
 else
 CUPS_CONFIG_OPTS+= --disable-gnutls
@@ -123,6 +183,22 @@ CUPS_HOST_BUILD_DIR=$(HOST_BUILD_DIR)/cups
 
 CUPS_IPK_DIR=$(BUILD_DIR)/cups-$(CUPS_VERSION)-ipk
 CUPS_IPK=$(BUILD_DIR)/cups_$(CUPS_VERSION)-$(CUPS_IPK_VERSION)_$(TARGET_ARCH).ipk
+
+LIBCUPS_IPK_DIR=$(BUILD_DIR)/libcups-$(CUPS_VERSION)-ipk
+LIBCUPS_IPK=$(BUILD_DIR)/libcups_$(CUPS_VERSION)-$(CUPS_IPK_VERSION)_$(TARGET_ARCH).ipk
+
+LIBCUPSCGI_IPK_DIR=$(BUILD_DIR)/libcupscgi-$(CUPS_VERSION)-ipk
+LIBCUPSCGI_IPK=$(BUILD_DIR)/libcupscgi_$(CUPS_VERSION)-$(CUPS_IPK_VERSION)_$(TARGET_ARCH).ipk
+
+LIBCUPSIMAGE_IPK_DIR=$(BUILD_DIR)/libcupsimage-$(CUPS_VERSION)-ipk
+LIBCUPSIMAGE_IPK=$(BUILD_DIR)/libcupsimage_$(CUPS_VERSION)-$(CUPS_IPK_VERSION)_$(TARGET_ARCH).ipk
+
+LIBCUPSMIME_IPK_DIR=$(BUILD_DIR)/libcupsmime-$(CUPS_VERSION)-ipk
+LIBCUPSMIME_IPK=$(BUILD_DIR)/libcupsmime_$(CUPS_VERSION)-$(CUPS_IPK_VERSION)_$(TARGET_ARCH).ipk
+
+LIBCUPSPPDC_IPK_DIR=$(BUILD_DIR)/libcupsppdc-$(CUPS_VERSION)-ipk
+LIBCUPSPPDC_IPK=$(BUILD_DIR)/libcupsppdc_$(CUPS_VERSION)-$(CUPS_IPK_VERSION)_$(TARGET_ARCH).ipk
+
 CUPS-DEV_IPK=$(BUILD_DIR)/cups-dev_$(CUPS_VERSION)-$(CUPS_IPK_VERSION)_$(TARGET_ARCH).ipk
 CUPS_DOC_IPK=$(BUILD_DIR)/cups-doc_$(CUPS_VERSION)-$(CUPS_IPK_VERSION)_$(TARGET_ARCH).ipk
 
@@ -143,12 +219,16 @@ $(DL_DIR)/$(CUPS_SOURCE):
 #
 cups-source: $(DL_DIR)/$(CUPS_SOURCE) $(CUPS_PATCHES)
 
-$(CUPS_HOST_BUILD_DIR)/.built: host/.configured $(DL_DIR)/$(CUPS_SOURCE) make/cups.mk
+$(CUPS_HOST_BUILD_DIR)/.built: host/.configured $(DL_DIR)/$(CUPS_SOURCE) $(CUPS_HOST_PATCHES) make/cups.mk
 #	$(MAKE) libjpeg-host-stage libpng-host-stage
 #	$(MAKE) openssl-host-stage
-	rm -rf $(HOST_BUILD_DIR)/$(CUPS_DIR) $(@D)
+	rm -rf  $(HOST_BUILD_DIR)/$(CUPS_DIR) $(@D) \
+		$(HOST_STAGING_PREFIX)/share/cups $(HOST_STAGING_PREFIX)/etc/cups
 	$(CUPS_UNZIP) $(DL_DIR)/$(CUPS_SOURCE) | tar -C $(HOST_BUILD_DIR) -xvf -
-	cat $(CUPS_SOURCE_DIR)/build_without_gnutls.patch | $(PATCH) -d $(HOST_BUILD_DIR)/$(CUPS_DIR) -p1
+	if test -n "$(CUPS_HOST_PATCHES)" ; \
+		then cat $(CUPS_HOST_PATCHES) | \
+		$(PATCH) -d $(HOST_BUILD_DIR)/$(CUPS_DIR) -p1 ; \
+	fi
 	if test "$(HOST_BUILD_DIR)/$(CUPS_DIR)" != "$(@D)" ; \
 		then mv $(HOST_BUILD_DIR)/$(CUPS_DIR) $(@D) ; \
 	fi
@@ -157,11 +237,11 @@ $(CUPS_HOST_BUILD_DIR)/.built: host/.configured $(DL_DIR)/$(CUPS_SOURCE) make/cu
 		--build=$(GNU_HOST_NAME) \
 		--host=$(GNU_HOST_NAME) \
 		--target=$(GNU_HOST_NAME) \
-		--prefix=$(TARGET_PREFIX) \
-		--exec_prefix=$(TARGET_PREFIX) \
-		--with-icondir=$(TARGET_PREFIX)/share/icons \
-		--with-menudir=$(TARGET_PREFIX)/share/applications \
-		--libdir=$(TARGET_PREFIX)/lib \
+		--prefix=$(HOST_STAGING_PREFIX) \
+		--exec_prefix=$(HOST_STAGING_PREFIX) \
+		--with-icondir=$(HOST_STAGING_PREFIX)/share/icons \
+		--with-menudir=$(HOST_STAGING_PREFIX)/share/applications \
+		--libdir=$(HOST_STAGING_LIB_DIR) \
 		--disable-nls \
 		--disable-dbus \
 		--disable-tiff \
@@ -178,20 +258,20 @@ $(CUPS_HOST_BUILD_DIR)/.built: host/.configured $(DL_DIR)/$(CUPS_SOURCE) make/cu
 	)
 	sed -i -e "s/-Wno-tautological-compare//" $(@D)/Makedefs
 	sed -i -e "s/^DIRS\t=.*/DIRS\t=\tcups \$$(BUILDDIRS)/" $(@D)/Makefile
-	$(MAKE) -C $(@D)
+	$(MAKE) -C $(@D) CC_FOR_BUILD=$(HOSTCC)
 	touch $@
 
 $(CUPS_HOST_BUILD_DIR)/.staged: $(CUPS_HOST_BUILD_DIR)/.built
 	rm -f $@
-	$(MAKE) -C $(@D) install DSTROOT=$(HOST_STAGING_DIR)
-	sed -i -e 's|=$(TARGET_PREFIX)|=$(HOST_STAGING_PREFIX)|' $(HOST_STAGING_PREFIX)/bin/cups-config
+	$(MAKE) -C $(@D) install INITDIR=$(HOST_STAGING_PREFIX)/etc
 	touch $@
 
 cups-host-stage: $(CUPS_HOST_BUILD_DIR)/.staged
 
-$(CUPS_BUILD_DIR)/.configured: $(CUPS_HOST_BUILD_DIR)/.built $(DL_DIR)/$(CUPS_SOURCE) $(CUPS_PATCHES) make/cups.mk
-	$(MAKE) openssl-stage zlib-stage libpng-stage
-	$(MAKE) libjpeg-stage libtiff-stage
+$(CUPS_BUILD_DIR)/.configured: $(CUPS_HOST_BUILD_DIR)/.built $(DL_DIR)/$(CUPS_SOURCE) $(CUPS_TARGET_PATCHES) make/cups.mk
+	$(MAKE) openssl-stage zlib-stage libpng-stage \
+		libjpeg-stage libtiff-stage \
+		libusb1-stage dbus-stage libstdc++-stage avahi-stage libacl-stage
 ifeq (openldap, $(filter openldap, $(PACKAGES)))
 	$(MAKE) openldap-stage
 endif
@@ -201,10 +281,11 @@ endif
 ifeq (gnutls, $(filter gnutls, $(PACKAGES)))
 	$(MAKE) gnutls-stage
 endif
-	rm -rf $(BUILD_DIR)/$(CUPS_DIR) $(@D)
+	rm -rf  $(BUILD_DIR)/$(CUPS_DIR) $(@D) \
+		$(STAGING_PREFIX)/share/cups $(STAGING_PREFIX)/etc/cups
 	$(CUPS_UNZIP) $(DL_DIR)/$(CUPS_SOURCE) | tar -C $(BUILD_DIR) -xvf -
-	if test -n "$(CUPS_PATCHES)" ; \
-		then cat $(CUPS_PATCHES) | \
+	if test -n "$(CUPS_TARGET_PATCHES)" ; \
+		then cat $(CUPS_TARGET_PATCHES) | \
 		$(PATCH) -d $(BUILD_DIR)/$(CUPS_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(CUPS_DIR)" != "$(@D)" ; \
@@ -216,6 +297,8 @@ endif
 		CPPFLAGS="$(CUPS_CPPFLAGS) $(STAGING_CPPFLAGS)" \
 		LDFLAGS="$(CUPS_LDFLAGS) $(STAGING_LDFLAGS)" \
 		LIBS="$(CUPS_LIBS)" \
+		PKG_CONFIG_PATH="$(STAGING_LIB_DIR)/pkgconfig" \
+		PKG_CONFIG_LIBDIR="$(STAGING_LIB_DIR)/pkgconfig" \
 		$(CUPS_CONFIG_ENV) \
 		./configure \
 		--verbose \
@@ -227,8 +310,13 @@ endif
 		--with-icondir=$(TARGET_PREFIX)/share/icons \
 		--with-menudir=$(TARGET_PREFIX)/share/applications \
 		--libdir=$(TARGET_PREFIX)/lib \
+		--with-printcap=$(TARGET_PREFIX)/etc/printcap \
+		--with-local-protocols="dnssd" \
 		--disable-nls \
 		--disable-dbus \
+		--disable-pam \
+		--with-rundir=$(TARGET_PREFIX)/var/run/cups \
+		--with-logdir=$(TARGET_PREFIX)/var/log/cups \
 		$(CUPS_CONFIG_OPTS) \
 		--with-openssl-libs=$(STAGING_LIB_DIR) \
 		--with-openssl-includes=$(STAGING_INCLUDE_DIR) \
@@ -238,6 +326,11 @@ endif
 		--without-python \
 		--disable-slp \
 		--disable-gssapi \
+		--with-cups-user=nobody \
+		--with-cups-group=nobody \
+		--with-system-groups="root sys system" \
+		--with-lpdconfigfile=xinetd://$(TARGET_PREFIX)/etc/xinetd.d/cups-lpd \
+		--with-smbconfigfile=samba://$(TARGET_PREFIX)/etc/samba/smb.conf \
 	)
 ifdef CUPS_GCC_DOES_NOT_SUPPORT_PIE
 	sed -i -e 's/ -pie -fPIE//' $(@D)/Makedefs
@@ -261,7 +354,7 @@ cups-unpack: $(CUPS_BUILD_DIR)/.configured
 #
 $(CUPS_BUILD_DIR)/.built: $(CUPS_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(@D)
+	$(MAKE) -C $(@D) CC_FOR_BUILD=$(HOSTCC)
 	$(MAKE) install -C $(@D) \
 		BUILDROOT=$(CUPS_BUILD_DIR)/install/ \
 		datarootdir='$${prefix}' \
@@ -325,6 +418,37 @@ $(CUPS_IPK_DIR)/CONTROL/control:
 	@echo "Suggests: $(CUPS_SUGGESTS)" >>$@
 	@echo "Conflicts: $(CUPS_CONFLICTS)" >>$@
 
+$(BUILD_DIR)/libcups-$(CUPS_VERSION)-ipk/CONTROL/control:
+	@$(INSTALL) -d $(@D)
+	@rm -f $@
+	@echo "Package: libcups$*" >>$@
+	@echo "Architecture: $(TARGET_ARCH)" >>$@
+	@echo "Priority: $(CUPS_PRIORITY)" >>$@
+	@echo "Section: lib" >>$@
+	@echo "Version: $(CUPS_VERSION)-$(CUPS_IPK_VERSION)" >>$@
+	@echo "Maintainer: $(CUPS_MAINTAINER)" >>$@
+	@echo "Source: $(CUPS_SITE)/$(CUPS_SOURCE)" >>$@
+	@echo "Description: $(LIBCUPS_DESCRIPTION)" >>$@
+	@echo "Depends: $(LIBCUPS_DEPENDS)" >>$@
+	@echo "Suggests: $(LIBCUPS_SUGGESTS)" >>$@
+	@echo "Conflicts: $(LIBCUPS_CONFLICTS)" >>$@
+
+$(BUILD_DIR)/libcups%-$(CUPS_VERSION)-ipk/CONTROL/control:
+	@$(INSTALL) -d $(@D)
+	@rm -f $@
+	@echo "Package: libcups$*" >>$@
+	@echo "Architecture: $(TARGET_ARCH)" >>$@
+	@echo "Priority: $(CUPS_PRIORITY)" >>$@
+	@echo "Section: lib" >>$@
+	@echo "Version: $(CUPS_VERSION)-$(CUPS_IPK_VERSION)" >>$@
+	@echo "Maintainer: $(CUPS_MAINTAINER)" >>$@
+	@echo "Source: $(CUPS_SITE)/$(CUPS_SOURCE)" >>$@
+	@echo "Description: $(LIBCUPS$(shell echo $* | tr a-z A-Z)_DESCRIPTION)" >>$@
+	@echo "Depends: $(LIBCUPS$(shell echo $* | tr a-z A-Z)_DEPENDS)" >>$@
+	@echo "Suggests: $(LIBCUPS$(shell echo $* | tr a-z A-Z)_SUGGESTS)" >>$@
+	@echo "Conflicts: $(LIBCUPS$(shell echo $* | tr a-z A-Z)_CONFLICTS)" >>$@
+
+
 $(CUPS_IPK_DIR)-doc/CONTROL/control:
 	@$(INSTALL) -d $(@D)
 	@rm -f $@
@@ -382,6 +506,27 @@ $(CUPS_IPK_DIR)-dev/CONTROL/control:
 #
 # You may need to patch your application to make it use these locations.
 #
+
+$(BUILD_DIR)/libcups_$(CUPS_VERSION)-$(CUPS_IPK_VERSION)_$(TARGET_ARCH).ipk:
+	rm -rf  $(LIBCUPS_IPK_DIR) \
+		$(BUILD_DIR)/libcups_*_$(TARGET_ARCH).ipk
+	$(INSTALL) -d $(LIBCUPS_IPK_DIR)$(TARGET_PREFIX)/lib
+	cp -af $(CUPS_BUILD_DIR)/install$(TARGET_PREFIX)/lib/libcups.so* $(LIBCUPS_IPK_DIR)$(TARGET_PREFIX)/lib
+	chmod u+w $(LIBCUPS_IPK_DIR)$(TARGET_PREFIX)/lib/libcups.so*
+	$(STRIP_COMMAND) $(LIBCUPS_IPK_DIR)$(TARGET_PREFIX)/lib/libcups.so*
+	$(MAKE) $(LIBCUPS_IPK_DIR)/CONTROL/control
+	cd $(BUILD_DIR); $(IPKG_BUILD) $(LIBCUPS_IPK_DIR)
+
+$(BUILD_DIR)/libcups%_$(CUPS_VERSION)-$(CUPS_IPK_VERSION)_$(TARGET_ARCH).ipk:
+	rm -rf  $(BUILD_DIR)/libcups$*-$(CUPS_VERSION)-ipk \
+		$(BUILD_DIR)/libcups$*_*_$(TARGET_ARCH).ipk
+	$(INSTALL) -d $(BUILD_DIR)/libcups$*-$(CUPS_VERSION)-ipk$(TARGET_PREFIX)/lib
+	cp -af $(CUPS_BUILD_DIR)/install$(TARGET_PREFIX)/lib/libcups$*.so* $(BUILD_DIR)/libcups$*-$(CUPS_VERSION)-ipk$(TARGET_PREFIX)/lib
+	chmod u+w $(BUILD_DIR)/libcups$*-$(CUPS_VERSION)-ipk$(TARGET_PREFIX)/lib/libcups$*.so*
+	$(STRIP_COMMAND) $(BUILD_DIR)/libcups$*-$(CUPS_VERSION)-ipk$(TARGET_PREFIX)/lib/libcups$*.so*
+	$(MAKE) $(BUILD_DIR)/libcups$*-$(CUPS_VERSION)-ipk/CONTROL/control
+	cd $(BUILD_DIR); $(IPKG_BUILD) $(BUILD_DIR)/libcups$*-$(CUPS_VERSION)-ipk
+
 $(CUPS_IPK) $(CUPS-DEV_IPK): $(CUPS_BUILD_DIR)/.locales
 	rm -rf $(CUPS_IPK_DIR) $(BUILD_DIR)/cups_*_$(TARGET_ARCH).ipk
 	rm -rf $(CUPS_IPK_DIR)-dev $(BUILD_DIR)/cups-dev_*_$(TARGET_ARCH).ipk
@@ -389,8 +534,8 @@ $(CUPS_IPK) $(CUPS-DEV_IPK): $(CUPS_BUILD_DIR)/.locales
 	$(INSTALL) -d $(CUPS_IPK_DIR)-dev$(TARGET_PREFIX)
 # Make sure $(TARGET_PREFIX)/var/spool has correct permissions
 	$(INSTALL) -m 0755 -d $(CUPS_IPK_DIR)$(TARGET_PREFIX)/var/spool
-	cp -rf $(CUPS_BUILD_DIR)/install/* $(CUPS_IPK_DIR)
-	rm -f $(CUPS_IPK_DIR)$(TARGET_PREFIX)/lib/*.a
+	cp -af $(CUPS_BUILD_DIR)/install/* $(CUPS_IPK_DIR)
+	rm -f $(CUPS_IPK_DIR)$(TARGET_PREFIX)/lib/*{.a,.so{,.*}}
 	rm -rf $(CUPS_IPK_DIR)/etc
 	rm -rf $(CUPS_IPK_DIR)$(TARGET_PREFIX)/share/doc/cups
 	rm -rf $(CUPS_IPK_DIR)$(TARGET_PREFIX)/man
@@ -406,19 +551,22 @@ $(CUPS_IPK) $(CUPS-DEV_IPK): $(CUPS_BUILD_DIR)/.locales
 	mv $(CUPS_IPK_DIR)$(TARGET_PREFIX)/bin/cups-config $(CUPS_IPK_DIR)$(TARGET_PREFIX)/sbin/
 	$(STRIP_COMMAND) $(CUPS_IPK_DIR)$(TARGET_PREFIX)/bin/*
 	mv $(CUPS_IPK_DIR)$(TARGET_PREFIX)/sbin/cups-config $(CUPS_IPK_DIR)$(TARGET_PREFIX)/bin/
-	chmod u+w $(CUPS_IPK_DIR)$(TARGET_PREFIX)/lib/lib*.so.* && \
-	$(STRIP_COMMAND) $(CUPS_IPK_DIR)$(TARGET_PREFIX)/lib/lib*.so.* && \
-	chmod u+w $(CUPS_IPK_DIR)$(TARGET_PREFIX)/lib/lib*.so.*
 	for d in backend cgi-bin daemon filter monitor notifier; do \
 	$(STRIP_COMMAND) $(CUPS_IPK_DIR)$(TARGET_PREFIX)/lib/cups/$$d/*; \
 	done
+	chmod 755 $(CUPS_IPK_DIR)$(TARGET_PREFIX)/lib/cups/*
+	chmod 700 $(CUPS_IPK_DIR)$(TARGET_PREFIX)/lib/cups/backend/*
+#	$(INSTALL) -m 644 $(CUPS_SOURCE_DIR)/mime.types $(CUPS_IPK_DIR)$(TARGET_PREFIX)/share/cups/mime
+#	$(INSTALL) -m 644 $(CUPS_SOURCE_DIR)/mime.convs $(CUPS_IPK_DIR)$(TARGET_PREFIX)/share/cups/mime
 # Copy the configuration file
 	$(INSTALL) -m 644 $(CUPS_SOURCE_DIR)/cupsd.conf $(CUPS_IPK_DIR)$(TARGET_PREFIX)/etc/cups
 	$(INSTALL) -m 644 $(CUPS_SOURCE_DIR)/printers.conf $(CUPS_IPK_DIR)$(TARGET_PREFIX)/etc/cups
-	$(INSTALL) -m 644 $(CUPS_SOURCE_DIR)/mime.types $(CUPS_IPK_DIR)$(TARGET_PREFIX)/etc/cups
-	$(INSTALL) -m 644 $(CUPS_SOURCE_DIR)/mime.convs $(CUPS_IPK_DIR)$(TARGET_PREFIX)/etc/cups
 # Copy the init.d startup file
-	$(INSTALL) -m 755 $(CUPS_SOURCE_DIR)/S88cups $(CUPS_IPK_DIR)$(TARGET_PREFIX)/doc/cups
+	$(INSTALL) -d $(CUPS_IPK_DIR)$(TARGET_PREFIX)/etc/init.d
+	$(INSTALL) -m 755 $(CUPS_SOURCE_DIR)/rc.cups $(CUPS_IPK_DIR)$(TARGET_PREFIX)/etc/init.d/S88cupsd
+# Install etc/xinetd.d/cups-lpd
+	$(INSTALL) -d $(CUPS_IPK_DIR)$(TARGET_PREFIX)/etc/xinetd.d
+	$(INSTALL) -m 644 $(CUPS_SOURCE_DIR)/xinetd.d/cups-lpd $(CUPS_IPK_DIR)$(TARGET_PREFIX)/etc/xinetd.d/cups-lpd
 # Copy lpd startup files
 	$(INSTALL) -m 755 $(CUPS_SOURCE_DIR)/S89cups-lpd \
 		$(CUPS_IPK_DIR)$(TARGET_PREFIX)/doc/cups
@@ -431,8 +579,8 @@ $(CUPS_IPK) $(CUPS-DEV_IPK): $(CUPS_BUILD_DIR)/.locales
 	mv $(CUPS_IPK_DIR)$(TARGET_PREFIX)/include $(CUPS_IPK_DIR)-dev$(TARGET_PREFIX)/
 	sed -i -e '/^SystemGroup/s/^/#/' $(CUPS_IPK_DIR)$(TARGET_PREFIX)/etc/cups/cups-files.conf
 	$(MAKE) $(CUPS_IPK_DIR)/CONTROL/control
-#	$(INSTALL) -m 644 $(CUPS_SOURCE_DIR)/postinst $(CUPS_IPK_DIR)/CONTROL/postinst
-	$(INSTALL) -m 644 $(CUPS_SOURCE_DIR)/prerm $(CUPS_IPK_DIR)/CONTROL/prerm
+	$(INSTALL) -m 755 $(CUPS_SOURCE_DIR)/postinst $(CUPS_IPK_DIR)/CONTROL/postinst
+	$(INSTALL) -m 755 $(CUPS_SOURCE_DIR)/prerm $(CUPS_IPK_DIR)/CONTROL/prerm
 	echo $(CUPS_CONFFILES) | sed -e 's/ /\n/g' > $(CUPS_IPK_DIR)/CONTROL/conffiles
 	$(MAKE) $(CUPS_IPK_DIR)-dev/CONTROL/control
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(CUPS_IPK_DIR)
@@ -487,7 +635,8 @@ $(CUPS_DOC_IPK): $(CUPS_BUILD_DIR)/.built
 #
 # This is called from the top level makefile to create the IPK file.
 #
-cups-ipk: $(CUPS_BUILD_DIR)/.locales $(CUPS_IPK) $(CUPS_DEV_IPK) $(CUPS_DOC_IPK)
+cups-ipk: 	$(CUPS_BUILD_DIR)/.locales $(CUPS_IPK) $(CUPS_DEV_IPK) $(CUPS_DOC_IPK) \
+		$(LIBCUPS_IPK) $(LIBCUPSCGI_IPK) $(LIBCUPSIMAGE_IPK) $(LIBCUPSMIME_IPK) $(LIBCUPSPPDC_IPK)
 
 #
 # This is called from the top level makefile to clean all of the built files.
@@ -505,10 +654,15 @@ cups-dirclean:
 	$(CUPS_IPK_DIR)-dev $(CUPS-DEV_IPK) \
 	$(CUPS_IPK_DIR)-doc $(CUPS_DOC_IPK) \
 	$(CUPS_IPK_DIR)-locale-* \
-	$(BUILD_DIR)/cups-locale-*_$(CUPS_VERSION)-$(CUPS_IPK_VERSION)_$(TARGET_ARCH).ipk
+	$(BUILD_DIR)/cups-locale-*_$(CUPS_VERSION)-$(CUPS_IPK_VERSION)_$(TARGET_ARCH).ipk \
+	$(LIBCUPS_IPK_DIR) $(LIBCUPS_IPK) \
+	$(LIBCUPSCGI_IPK_DIR) $(LIBCUPSCGI_IPK) \
+	$(LIBCUPSIMAGE_IPK_DIR) $(LIBCUPSIMAGE_IPK) \
+	$(LIBCUPSMIME_IPK_DIR) $(LIBCUPSMIME_IPK) \
+	$(LIBCUPSPPDC_IPK_DIR) $(LIBCUPSPPDC_IPK)
 
 #
 # Some sanity check for the package.
 #
-cups-check: $(CUPS_IPK)
+cups-check: $(CUPS_IPK) $(LIBCUPS_IPK) $(LIBCUPSCGI_IPK) $(LIBCUPSIMAGE_IPK) $(LIBCUPSMIME_IPK) $(LIBCUPSPPDC_IPK)
 	perl scripts/optware-check-package.pl --target=$(OPTWARE_TARGET) $^

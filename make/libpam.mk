@@ -36,11 +36,23 @@ LIBPAM_CONFLICTS=
 #
 # LIBPAM_IPK_VERSION should be incremented when the ipk changes.
 #
-LIBPAM_IPK_VERSION=1
+LIBPAM_IPK_VERSION=4
 
 #
 # LIBPAM_CONFFILES should be a list of user-editable files
-#LIBPAM_CONFFILES=$(TARGET_PREFIX)/etc/libpam.conf $(TARGET_PREFIX)/etc/init.d/SXXlibpam
+LIBPAM_CONFFILES=\
+$(TARGET_PREFIX)/etc/pam.conf \
+$(TARGET_PREFIX)/etc/security/time.conf \
+$(TARGET_PREFIX)/etc/security/access.conf \
+$(TARGET_PREFIX)/etc/security/pam_env.conf \
+$(TARGET_PREFIX)/etc/security/group.conf \
+$(TARGET_PREFIX)/etc/security/namespace.conf \
+$(TARGET_PREFIX)/etc/security/limits.conf \
+$(TARGET_PREFIX)/etc/pam.d/common-account \
+$(TARGET_PREFIX)/etc/pam.d/common-auth \
+$(TARGET_PREFIX)/etc/pam.d/common-password \
+$(TARGET_PREFIX)/etc/pam.d/common-session \
+$(TARGET_PREFIX)/etc/pam.d/other \
 
 #
 # LIBPAM_PATCHES should list any patches, in the the order in
@@ -49,6 +61,9 @@ LIBPAM_IPK_VERSION=1
 LIBPAM_PATCHES=\
 $(LIBPAM_SOURCE_DIR)/pam_unix_fix_sgid_shadow_auth.patch \
 $(LIBPAM_SOURCE_DIR)/pam_unix_dont_trust_chkpwd_caller.patch \
+$(LIBPAM_SOURCE_DIR)/000-optware_paths.patch \
+$(LIBPAM_SOURCE_DIR)/001-buildroot-patches.patch \
+$(LIBPAM_SOURCE_DIR)/002-configure_libcrypt.patch \
 $(LIBPAM_SOURCE_DIR)/007_modules_pam_unix \
 $(LIBPAM_SOURCE_DIR)/008_modules_pam_limits_chroot \
 $(LIBPAM_SOURCE_DIR)/021_nis_cleanup \
@@ -64,6 +79,7 @@ $(LIBPAM_SOURCE_DIR)/040_pam_limits_log_failure \
 $(LIBPAM_SOURCE_DIR)/045_pam_dispatch_jump_is_ignore \
 $(LIBPAM_SOURCE_DIR)/054_pam_security_abstract_securetty_handling \
 $(LIBPAM_SOURCE_DIR)/055_pam_unix_nullok_secure \
+$(LIBPAM_SOURCE_DIR)/056-pam_unix_no_pass_expiry.patch \
 $(LIBPAM_SOURCE_DIR)/cve-2011-4708.patch \
 $(LIBPAM_SOURCE_DIR)/update-motd \
 $(LIBPAM_SOURCE_DIR)/no_PATH_MAX_on_hurd \
@@ -129,7 +145,7 @@ libpam-source: $(DL_DIR)/$(LIBPAM_SOURCE) $(LIBPAM_PATCHES)
 # shown below to make various patches to it.
 #
 $(LIBPAM_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBPAM_SOURCE) $(LIBPAM_PATCHES) make/libpam.mk
-#	$(MAKE) <bar>-stage <baz>-stage
+	$(MAKE) gettext-host-stage
 	rm -rf $(BUILD_DIR)/$(LIBPAM_DIR) $(@D)
 	$(LIBPAM_UNZIP) $(DL_DIR)/$(LIBPAM_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(LIBPAM_PATCHES)" ; \
@@ -153,6 +169,15 @@ $(LIBPAM_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBPAM_SOURCE) $(LIBPAM_PATCHES) ma
 		--disable-nls \
 		--disable-static \
 		--disable-audit \
+		--disable-prelude \
+		--disable-isadir \
+		--disable-nis \
+		--disable-db \
+		--disable-regenerate-docu \
+		--with-mailspool=$(TARGET_PREFIX)/var/spool/mail \
+		--with-xauth=$(TARGET_PREFIX)/bin/xauth \
+		--enable-securedir=$(TARGET_PREFIX)/lib/security \
+		--libdir=$(TARGET_PREFIX)/lib \
 	)
 	$(PATCH_LIBTOOL) $(@D)/libtool
 	touch $@
@@ -164,7 +189,7 @@ libpam-unpack: $(LIBPAM_BUILD_DIR)/.configured
 #
 $(LIBPAM_BUILD_DIR)/.built: $(LIBPAM_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(@D)/libpam
+	$(MAKE) -C $(@D)
 	touch $@
 
 #
@@ -177,8 +202,13 @@ libpam: $(LIBPAM_BUILD_DIR)/.built
 #
 $(LIBPAM_BUILD_DIR)/.staged: $(LIBPAM_BUILD_DIR)/.built
 	rm -f $@
+	rm -rf $(STAGING_INCLUDE_DIR)/security
 	$(MAKE) -C $(@D)/libpam DESTDIR=$(STAGING_DIR) install
 	rm -f $(STAGING_LIB_DIR)/libpam*.la
+	mkdir -p $(STAGING_INCLUDE_DIR)/security
+	for h in _pam_types.h _pam_compat.h pam_modutil.h pam_modules.h pam_ext.h pam_appl.h _pam_macros.h; do \
+		ln -sf ../$$h $(STAGING_INCLUDE_DIR)/security/$$h; \
+	done
 	touch $@
 
 libpam-stage: $(LIBPAM_BUILD_DIR)/.staged
@@ -216,11 +246,14 @@ $(LIBPAM_IPK_DIR)/CONTROL/control:
 #
 $(LIBPAM_IPK): $(LIBPAM_BUILD_DIR)/.built
 	rm -rf $(LIBPAM_IPK_DIR) $(BUILD_DIR)/libpam_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(LIBPAM_BUILD_DIR)/libpam DESTDIR=$(LIBPAM_IPK_DIR) install
-	$(STRIP_COMMAND) $(LIBPAM_IPK_DIR)/$(TARGET_PREFIX)/lib/*.so
+	$(MAKE) -C $(LIBPAM_BUILD_DIR) DESTDIR=$(LIBPAM_IPK_DIR) install
+	$(STRIP_COMMAND) $(LIBPAM_IPK_DIR)/$(TARGET_PREFIX)/lib{,/security}/*.so \
+			$(LIBPAM_IPK_DIR)/$(TARGET_PREFIX)/lib/security/pam_filter/upperLOWER \
+			$(LIBPAM_IPK_DIR)/$(TARGET_PREFIX)/sbin/*
 	find $(LIBPAM_IPK_DIR)/$(TARGET_PREFIX) -type f -name '*.la' -exec rm -f {} \;
-#	$(INSTALL) -d $(LIBPAM_IPK_DIR)$(TARGET_PREFIX)/etc/
-#	$(INSTALL) -m 644 $(LIBPAM_SOURCE_DIR)/libpam.conf $(LIBPAM_IPK_DIR)$(TARGET_PREFIX)/etc/libpam.conf
+	$(INSTALL) -d $(LIBPAM_IPK_DIR)$(TARGET_PREFIX)/etc/pam.d
+	$(INSTALL) -m 644 $(LIBPAM_BUILD_DIR)/conf/pam.conf $(LIBPAM_IPK_DIR)$(TARGET_PREFIX)/etc/pam.conf
+	$(INSTALL) -m 644 $(LIBPAM_SOURCE_DIR)/conf/{common-account,common-auth,common-password,common-session,other} $(LIBPAM_IPK_DIR)$(TARGET_PREFIX)/etc/pam.d
 #	$(INSTALL) -d $(LIBPAM_IPK_DIR)$(TARGET_PREFIX)/etc/init.d
 #	$(INSTALL) -m 755 $(LIBPAM_SOURCE_DIR)/rc.libpam $(LIBPAM_IPK_DIR)$(TARGET_PREFIX)/etc/init.d/SXXlibpam
 #	sed -i -e '/^#!/aOPTWARE_TARGET=${OPTWARE_TARGET}' $(LIBPAM_IPK_DIR)$(TARGET_PREFIX)/etc/init.d/SXXlibpam

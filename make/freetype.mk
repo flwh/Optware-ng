@@ -20,7 +20,7 @@
 # You should change all these variables to suit your package.
 #
 FREETYPE_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/freetype
-FREETYPE_VERSION=2.5.5
+FREETYPE_VERSION=2.8.1
 FREETYPE_SOURCE=freetype-$(FREETYPE_VERSION).tar.bz2
 FREETYPE_DIR=freetype-$(FREETYPE_VERSION)
 FREETYPE_UNZIP=bzcat
@@ -161,7 +161,7 @@ $(FREETYPE_BUILD_DIR)/.staged: $(FREETYPE_BUILD_DIR)/.built
 	$(INSTALL) -d $(STAGING_DIR)/bin
 	cp $(STAGING_PREFIX)/bin/freetype-config $(STAGING_DIR)/bin/freetype-config
 	rm -f $(STAGING_LIB_DIR)/libfreetype.la
-	sed -i -e '/^libdir=/s|=.*|=$(STAGING_LIB_DIR)|' -e '/^includedir=/s|=.*|=$(STAGING_INCLUDE_DIR)/freetype2|' \
+	sed -i -e '/^libdir=/s|=.*|=$(STAGING_LIB_DIR)|' -e '/^includedir=/s|=.*|=$(STAGING_INCLUDE_DIR)|' \
 		-e '/prefix=/s|=.*|=$(STAGING_PREFIX)|' $(STAGING_LIB_DIR)/pkgconfig/freetype2.pc
 	touch $@
 
@@ -202,6 +202,7 @@ $(FREETYPE_IPK): $(FREETYPE_BUILD_DIR)/.built
 	$(MAKE) -C $(FREETYPE_BUILD_DIR) DESTDIR=$(FREETYPE_IPK_DIR) install
 	$(STRIP_COMMAND) $(FREETYPE_IPK_DIR)$(TARGET_PREFIX)/lib/*.so
 	rm -f $(FREETYPE_IPK_DIR)$(TARGET_PREFIX)/lib/*.la
+	sed -i -e 's|$(STAGING_LIB_DIR)|$(TARGET_PREFIX)/lib|g' $(FREETYPE_IPK_DIR)$(TARGET_PREFIX)/bin/freetype-config
 	$(MAKE) $(FREETYPE_IPK_DIR)/CONTROL/control
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(FREETYPE_IPK_DIR)
 

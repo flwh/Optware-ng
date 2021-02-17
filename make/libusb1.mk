@@ -43,12 +43,12 @@ LIBUSB1_CONFLICTS=
 #
 # LIBUSB1_IPK_VERSION should be incremented when the ipk changes.
 #
-LIBUSB1_IPK_VERSION=1
+LIBUSB1_IPK_VERSION=2
 #
 # LIBUSB1_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-#LIBUSB1_PATCHES=
+LIBUSB1_PATCHES=$(LIBUSB1_SOURCE_DIR)/configure.patch
 
 #
 # If the compilation of the package requires additional
@@ -108,7 +108,7 @@ $(LIBUSB1_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBUSB1_SOURCE) $(LIBUSB1_PATCHES)
 	rm -rf $(BUILD_DIR)/$(LIBUSB1_DIR) $(@D)
 	$(LIBUSB1_UNZIP) $(DL_DIR)/$(LIBUSB1_SOURCE) | tar -C $(BUILD_DIR) -xf -
 	if test -n "$(LIBUSB1_PATCHES)"; then \
-		cat $(LIBUSB1_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(LIBUSB1_DIR) -p0; \
+		cat $(LIBUSB1_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(LIBUSB1_DIR) -p1; \
 	fi
 	if test "$(BUILD_DIR)/$(LIBUSB1_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(LIBUSB1_DIR) $(@D) ; \
@@ -145,6 +145,7 @@ libusb1: $(LIBUSB1_BUILD_DIR)/.built
 $(LIBUSB1_BUILD_DIR)/.staged: $(LIBUSB1_BUILD_DIR)/.built
 	rm -f $@
 	$(MAKE) -C $(LIBUSB1_BUILD_DIR) DESTDIR=$(STAGING_DIR) install
+	rm -f $(STAGING_LIB_DIR)/libusb-1.0.la
 	sed -i -e 's|^prefix=.*|prefix=$(STAGING_PREFIX)|' $(STAGING_LIB_DIR)/pkgconfig/libusb-1.0.pc
 	touch $@
 
@@ -182,7 +183,7 @@ $(LIBUSB1_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 $(LIBUSB1_IPK): $(LIBUSB1_BUILD_DIR)/.built
-	rm -rf $(LIBUSB1_IPK_DIR) $(LIBUSB1_IPK)
+	rm -rf $(LIBUSB1_IPK_DIR) $(BUILD_DIR)/libusb1_*_$(TARGET_ARCH).ipk
 	$(MAKE) -C $(LIBUSB1_BUILD_DIR) DESTDIR=$(LIBUSB1_IPK_DIR) install-strip
 	rm -rf $(LIBUSB1_IPK_DIR)$(TARGET_PREFIX)/lib/*.la $(LIBUSB1_IPK_DIR)$(TARGET_PREFIX)/lib/*.a
 	$(MAKE) $(LIBUSB1_IPK_DIR)/CONTROL/control

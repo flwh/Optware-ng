@@ -40,7 +40,7 @@ BITCHX_DEPENDS=ncurses
 #
 # BITCHX_IPK_VERSION should be incremented when the ipk changes.
 #
-BITCHX_IPK_VERSION=1
+BITCHX_IPK_VERSION=4
 
 #
 # BITCHX_CONFFILES should be a list of user-editable files
@@ -130,7 +130,7 @@ bitchx-unpack: $(BITCHX_BUILD_DIR)/.configured
 #
 $(BITCHX_BUILD_DIR)/.built: $(BITCHX_BUILD_DIR)/.configured
 	rm -f $(BITCHX_BUILD_DIR)/.built
-	$(MAKE) -C $(BITCHX_BUILD_DIR)
+	$(MAKE) -C $(BITCHX_BUILD_DIR) -j1
 	touch $(BITCHX_BUILD_DIR)/.built
 
 #
@@ -179,7 +179,7 @@ $(BITCHX_IPK_DIR)/CONTROL/control:
 #
 $(BITCHX_IPK): $(BITCHX_BUILD_DIR)/.built
 	rm -rf $(BITCHX_IPK_DIR) $(BUILD_DIR)/bitchx_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(BITCHX_BUILD_DIR) DESTDIR=$(BITCHX_IPK_DIR) prefix=$(BITCHX_IPK_DIR)$(TARGET_PREFIX) install
+	$(MAKE) -C $(BITCHX_BUILD_DIR) DESTDIR=$(BITCHX_IPK_DIR) install
 	$(MAKE) $(BITCHX_IPK_DIR)/CONTROL/control
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(BITCHX_IPK_DIR)
 

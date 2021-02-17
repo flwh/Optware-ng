@@ -21,7 +21,7 @@
 #
 FREERADIUS_SITE=ftp://ftp.freeradius.org/pub/radius
 FREERADIUS_SITE2=$(FREERADIUS_SITE)/old
-FREERADIUS_VERSION=3.0.10
+FREERADIUS_VERSION=3.0.15
 FREERADIUS_DIR=freeradius-server-$(FREERADIUS_VERSION)
 FREERADIUS_SOURCE=$(FREERADIUS_DIR).tar.bz2
 FREERADIUS_UNZIP=bzcat
@@ -29,7 +29,7 @@ FREERADIUS_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 FREERADIUS_DESCRIPTION=An open source RADIUS server.
 FREERADIUS_SECTION=net
 FREERADIUS_PRIORITY=optional
-FREERADIUS_DEPENDS=libtool, openssl, psmisc, talloc
+FREERADIUS_DEPENDS=libtool, openssl, psmisc, talloc, libpcap, busybox-base, readline, libcap, pcre
 FREERADIUS_SUGGESTS=freeradius-doc
 FREERADIUS_CONFLICTS=
 
@@ -43,9 +43,10 @@ FREERADIUS_IPK_VERSION=2
 # which they should be applied to the source code.
 #
 FREERADIUS_PATCHES=\
-$(FREERADIUS_SOURCE_DIR)/configure.ac.patch \
 $(FREERADIUS_SOURCE_DIR)/headers.patch \
-$(FREERADIUS_SOURCE_DIR)/acinclude.m4.patch
+$(FREERADIUS_SOURCE_DIR)/acinclude.m4.patch \
+$(FREERADIUS_SOURCE_DIR)/hostname.patch \
+$(FREERADIUS_SOURCE_DIR)/freeradius-fix-error-for-expansion-of-macro.patch \
 
 #
 # If the compilation of the package requires additional
@@ -113,7 +114,8 @@ freeradius-source: $(DL_DIR)/$(FREERADIUS_SOURCE) $(FREERADIUS_PATCHES)
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
 $(FREERADIUS_BUILD_DIR)/.configured: $(DL_DIR)/$(FREERADIUS_SOURCE) $(FREERADIUS_PATCHES) make/freeradius.mk
-	$(MAKE) openssl-stage libtool-stage talloc-stage postgresql-stage unixodbc-stage
+	$(MAKE) openssl-stage libtool-stage talloc-stage postgresql-stage unixodbc-stage libpcap-stage \
+		readline-stage libcap-stage pcre-stage
 ifeq (, $(filter --without-rlm-sql-mysql, $(FREERADIUS_CONFIG_ARGS)))
 	$(MAKE) mysql-stage
 endif
@@ -170,7 +172,7 @@ $(FREERADIUS_BUILD_DIR)/.built: $(FREERADIUS_BUILD_DIR)/.configured
 	$(HOSTCC) $(@D)/scripts/jlibtool.c -o $(@D)/jlibtool
 	$(MAKE) -C $(@D) headers
 	$(MAKE) -C $(@D) JLIBTOOL=$(@D)/jlibtool
-	$(MAKE) install -C $(@D) JLIBTOOL=$(@D)/jlibtool \
+	$(MAKE) install -C $(@D) JLIBTOOL=$(@D)/jlibtool -j 1 \
 		R=$(@D)/install \
 		STRIPPROG=$(TARGET_STRIP) \
 		;
@@ -238,7 +240,7 @@ $(FREERADIUS_DOC_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 $(FREERADIUS_IPK): $(FREERADIUS_BUILD_DIR)/.built
-	rm -rf $(FREERADIUS_IPK_DIR) $(FREERADIUS_IPK)
+	rm -rf $(FREERADIUS_IPK_DIR) $(BUILD_DIR)/freeradius_*_$(TARGET_ARCH).ipk
 	$(INSTALL) -d $(FREERADIUS_IPK_DIR)$(TARGET_PREFIX)
 	cp -rf $(FREERADIUS_BUILD_DIR)/install/* $(FREERADIUS_IPK_DIR)/
 	rm -rf $(FREERADIUS_IPK_DIR)$(TARGET_PREFIX)/share/doc
@@ -247,7 +249,6 @@ $(FREERADIUS_IPK): $(FREERADIUS_BUILD_DIR)/.built
 	rm -rf $(FREERADIUS_IPK_DIR)$(TARGET_PREFIX)/man/*
 	rm -rf $(FREERADIUS_IPK_DIR)$(TARGET_PREFIX)/share/man/*
 	mv $(FREERADIUS_IPK_DIR)$(TARGET_PREFIX)/etc/* $(FREERADIUS_IPK_DIR)$(TARGET_PREFIX)/doc/.radius/
-	$(INSTALL) -m 644 $(FREERADIUS_SOURCE_DIR)/radiusd.conf $(FREERADIUS_IPK_DIR)$(TARGET_PREFIX)/doc/.radius/raddb/radiusd.conf
 	$(INSTALL) -d $(FREERADIUS_IPK_DIR)$(TARGET_PREFIX)/etc/init.d
 	-$(STRIP_COMMAND) $(FREERADIUS_IPK_DIR)$(TARGET_PREFIX)/{{bin,sbin}/*,lib/*.so}
 	$(INSTALL) -m 755 $(FREERADIUS_SOURCE_DIR)/rc.freeradius $(FREERADIUS_IPK_DIR)$(TARGET_PREFIX)/etc/init.d/S55freeradius
@@ -257,7 +258,7 @@ $(FREERADIUS_IPK): $(FREERADIUS_BUILD_DIR)/.built
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(FREERADIUS_IPK_DIR)
 
 $(FREERADIUS_DOC_IPK): $(FREERADIUS_BUILD_DIR)/.built
-	rm -rf $(FREERADIUS_DOC_IPK_DIR) $(FREERADIUS_DOC_IPK)
+	rm -rf $(FREERADIUS_DOC_IPK_DIR) $(BUILD_DIR)/freeradius-doc_*_$(TARGET_ARCH).ipk
 	$(INSTALL) -d $(FREERADIUS_DOC_IPK_DIR)$(TARGET_PREFIX)/doc
 	$(INSTALL) -d $(FREERADIUS_DOC_IPK_DIR)$(TARGET_PREFIX)/man
 	cp -rf $(FREERADIUS_BUILD_DIR)/install$(TARGET_PREFIX)/share/man/* $(FREERADIUS_DOC_IPK_DIR)$(TARGET_PREFIX)/man/

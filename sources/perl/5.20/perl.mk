@@ -23,7 +23,12 @@ perl-source: $(DL_DIR)/$(PERL_CROSS_SOURCE)
 # PERL_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-#PERL_PATCHES=$(PERL_SOURCE_DIR)/$(PERL_MAJOR_VER)/INET.pm.patch
+PERL_PATCHES=\
+$(PERL_SOURCE_DIR)/$(PERL_MAJOR_VER)/Fix-Errno.pm-generation-for-gcc-5.0-simple.patch \
+$(PERL_SOURCE_DIR)/$(PERL_MAJOR_VER)/h2ph-correct-handling-of-hex-constants-for-the-preamble.patch \
+$(PERL_SOURCE_DIR)/$(PERL_MAJOR_VER)/lib-h2ph.t-to-test-generated-t-_h2ph_pre.ph-instead-of-the-system-one.patch \
+
+PERL_CROSS_PATCHES=$(PERL_SOURCE_DIR)/$(PERL_MAJOR_VER)/dynamic_ext.fix.patch
 
 #PERL_POST_CONFIGURE_PATCHES=$(PERL_SOURCE_DIR)/Makefile-pp_hot.patch
 
@@ -31,7 +36,7 @@ perl-source: $(DL_DIR)/$(PERL_CROSS_SOURCE)
 # If the compilation of the package requires additional
 # compilation or linking flags, then list them here.
 #
-PERL_CPPFLAGS=
+PERL_CPPFLAGS=-pthread
 PERL_ARCH = $(strip \
     $(if $(filter openwrt-ixp4xx slugos5be, $(OPTWARE_TARGET)), armv5teb-linux, \
     $(if $(filter buildroot-armeabi buildroot-armeabi-ng buildroot-armeabihf shibby-tomato-arm, $(OPTWARE_TARGET)), armv7l-linux, \
@@ -40,12 +45,12 @@ PERL_ARCH = $(strip \
     $(if $(filter powerpc, $(TARGET_ARCH)), ppc-linux, \
     $(TARGET_ARCH)-linux))))))
 PERL_LIB_CORE_DIR=perl5/$(PERL_VERSION)/$(PERL_ARCH)/CORE
-PERL_LDFLAGS=-Wl,-rpath,$(TARGET_PREFIX)/lib/$(PERL_LIB_CORE_DIR)
+PERL_LDFLAGS=-pthread -Wl,-rpath,$(TARGET_PREFIX)/lib/$(PERL_LIB_CORE_DIR)
 ifeq (vt4, $(OPTWARE_TARGET))
 PERL_LDFLAGS_EXTRA+= -L$(TARGET_CROSS_TOP)/920t_le/lib/gcc/arm-linux/3.4.4
 endif
 
-PERL_LIBS=-lpthread -ldb-$(LIBDB_LIB_VERSION) -lgdbm -lgdbm_compat
+PERL_LIBS=-ldb-$(LIBDB_LIB_VERSION) -lgdbm -lgdbm_compat
 
 #
 # PERL_BUILD_DIR is the directory in which the build is done.
@@ -120,16 +125,19 @@ perl-hostperl: $(PERL_HOST_BUILD_DIR)/.hostbuilt
 ifeq ($(HOSTCC), $(TARGET_CC))
 $(PERL_BUILD_DIR)/.configured: $(DL_DIR)/$(PERL_SOURCE) $(PERL_PATCHES) $(SOURCE_DIR)/perl/$(PERL_MAJOR_VER)/perl.mk
 else
-$(PERL_BUILD_DIR)/.configured: $(PERL_PATCHES) $(DL_DIR)/$(PERL_CROSS_SOURCE) $(PERL_HOST_BUILD_DIR)/.hostbuilt
+$(PERL_BUILD_DIR)/.configured: $(PERL_PATCHES) $(DL_DIR)/$(PERL_CROSS_SOURCE) $(PERL_HOST_BUILD_DIR)/.hostbuilt $(SOURCE_DIR)/perl/$(PERL_MAJOR_VER)/perl.mk
 endif
 	$(MAKE) libdb-stage gdbm-stage
 	rm -rf $(BUILD_DIR)/$(PERL_DIR) $(@D)
 	$(PERL_UNZIP) $(DL_DIR)/$(PERL_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(PERL_PATCHES)" ; then \
-		cat $(PERL_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(PERL_DIR) -p0 ; \
+		cat $(PERL_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(PERL_DIR) -p1 ; \
 	fi
 ifneq ($(HOSTCC), $(TARGET_CC))
 	$(PERL_CROSS_UNZIP) $(DL_DIR)/$(PERL_CROSS_SOURCE) | tar --overwrite -C $(BUILD_DIR) -xvf -
+	if test -n "$(PERL_CROSS_PATCHES)" ; then \
+		cat $(PERL_CROSS_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(PERL_DIR) -p1 ; \
+	fi
 endif
 	mv $(BUILD_DIR)/$(PERL_DIR) $(@D)
 	sed -i -e '/LIBS/s|-L/usr/local/lib|-L$(STAGING_LIB_DIR)|' $(@D)/ext/*/Makefile.PL
@@ -188,6 +196,8 @@ else
 		-Dar=$(TARGET_AR) \
 		-Dcpp=$(TARGET_CPP) \
 		-Dranlib=$(TARGET_RANLIB) \
+		-Duseshrplib \
+		-Dusethreads \
 	)
 endif
 	touch $@
@@ -199,6 +209,10 @@ perl-unpack: $(PERL_BUILD_DIR)/.configured
 #
 $(PERL_BUILD_DIR)/.built: $(PERL_BUILD_DIR)/.configured
 	rm -f $@
+	$(MAKE) -C $(@D) libperl.so \
+		LD=$(TARGET_CC) \
+		LDFLAGS="$(STAGING_LDFLAGS) $(PERL_LDFLAGS) $(PERL_LDFLAGS_EXTRA) -lpthread -fstack-protector" \
+		LDDLFLAGS="-shared -O2 $(STAGING_LDFLAGS) $(PERL_LDFLAGS) $(PERL_LDFLAGS_EXTRA) -lpthread -fstack-protector"
 	$(MAKE) -C $(@D) \
 		LD=$(TARGET_CC) \
 		LDFLAGS="$(STAGING_LDFLAGS) $(PERL_LDFLAGS) $(PERL_LDFLAGS_EXTRA) -lpthread -fstack-protector" \

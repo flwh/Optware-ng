@@ -21,7 +21,7 @@
 #
 SAMBA34_SITE=http://www.samba.org/samba/ftp/stable
 SAMBA34_VERSION ?= 3.4.17
-SAMBA34_IPK_VERSION ?= 3
+SAMBA34_IPK_VERSION ?= 4
 SAMBA34_SOURCE=samba-$(SAMBA34_VERSION).tar.gz
 SAMBA34_DIR=samba-$(SAMBA34_VERSION)
 SAMBA34_UNZIP=zcat
@@ -357,7 +357,7 @@ $(SAMBA34-SWAT_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 $(SAMBA34_IPK) $(SAMBA34-DEV_IPK) $(SAMBA34-SWAT_IPK): $(SAMBA34_BUILD_DIR)/.built
-	rm -rf $(SAMBA34_IPK_DIR) $(BUILD_DIR)/SAMBA34_*_$(TARGET_ARCH).ipk
+	rm -rf $(SAMBA34_IPK_DIR) $(BUILD_DIR)/samba34_*_$(TARGET_ARCH).ipk
 	rm -rf $(SAMBA34-DEV_IPK_DIR) $(BUILD_DIR)/samba34-dev_*_$(TARGET_ARCH).ipk
 	rm -rf $(SAMBA34-SWAT_IPK_DIR) $(BUILD_DIR)/samba34-swat_*_$(TARGET_ARCH).ipk
 	# samba3

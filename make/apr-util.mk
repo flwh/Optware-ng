@@ -14,7 +14,7 @@
 # It is usually "zcat" (for .gz) or "bzcat" (for .bz2)
 #
 APR_UTIL_SITE=http://www.apache.org/dist/apr
-APR_UTIL_VERSION=1.5.4
+APR_UTIL_VERSION=1.6.0
 APR_UTIL_SOURCE=apr-util-$(APR_UTIL_VERSION).tar.bz2
 APR_UTIL_DIR=apr-util-$(APR_UTIL_VERSION)
 APR_UTIL_UNZIP=bzcat
@@ -22,7 +22,13 @@ APR_UTIL_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 APR_UTIL_DESCRIPTION=Apache Portable Runtime utilities library
 APR_UTIL_SECTION=lib
 APR_UTIL_PRIORITY=optional
-APR_UTIL_DEPENDS=apr (>= 1.3.8), e2fslibs, expat, gdbm, libdb, openssl
+APR_UTIL_DEPENDS=apr (>= $(APR_VERSION)), e2fslibs, expat, gdbm, libdb, openssl
+ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
+APR_UTIL_DEPENDS+=, libiconv
+endif
+ifeq (openldap, $(filter openldap, $(PACKAGES)))
+APR_UTIL_DEPENDS+=, openldap-libs
+endif
 APR_UTIL_SUGGESTS=sqlite
 
 #
@@ -130,6 +136,9 @@ $(APR_UTIL_BUILD_DIR)/.configured: $(DL_DIR)/$(APR_UTIL_SOURCE) $(APR_UTIL_PATCH
 	$(MAKE) gdbm-stage libdb-stage sqlite-stage expat-stage e2fsprogs-stage openssl-stage
 ifeq (openldap, $(filter openldap, $(PACKAGES)))
 	$(MAKE) openldap-stage
+endif
+ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
+	$(MAKE) libiconv-stage
 endif
 	$(MAKE) apr-stage
 	rm -rf $(BUILD_DIR)/$(APR_UTIL_DIR) $(@D)

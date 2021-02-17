@@ -4,27 +4,23 @@
 #
 ###########################################################
 
-MOTION_SVN=http://www.lavrsen.dk/svn/motion/trunk
+#MOTION_SVN=http://www.lavrsen.dk/svn/motion/trunk
 MOTION_SVN_REVISION=000564
 ifdef MOTION_SVN
 MOTION_VERSION=3.2.12+svn$(MOTION_SVN_REVISION)
 else
-MOTION_VERSION=3.2.12
+MOTION_VERSION=4.1
 endif
 MOTION_SITE=http://sourceforge.net/projects/motion/files/motion%20-%20$(shell echo $(MOTION_VERSION)|cut -d '.' -f 1-2)
-MOTION_SOURCE=motion-$(MOTION_VERSION).tar.gz
-MOTION_DIR=motion-$(MOTION_VERSION)
+MOTION_SOURCE=motion-release-$(MOTION_VERSION).tar.gz
+MOTION_DIR=motion-release-$(MOTION_VERSION)
 MOTION_UNZIP=zcat
 MOTION_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 MOTION_DESCRIPTION=a software motion detector
 MOTION_SECTION=misc
 MOTION_PRIORITY=optional
-ifeq ($(OPTWARE_TARGET),ds101g)
-MOTION_DEPENDS=ffmpeg
-else
-MOTION_DEPENDS=ffmpeg,mysql
-endif
-MOTION_SUGGESTS=
+MOTION_DEPENDS=ffmpeg, libjpeg, sqlite
+MOTION_SUGGESTS=mysql
 MOTION_CONFLICTS=
 
 #
@@ -40,18 +36,15 @@ MOTION_CONFFILES=$(TARGET_PREFIX)/etc/motion.conf $(TARGET_PREFIX)/etc/init.d/S9
 # MOTION_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-#MOTION_PATCHES=$(MOTION_SOURCE_DIR)/configure.patch
+MOTION_PATCHES=\
+$(MOTION_SOURCE_DIR)/deprecated_definitions.patch
 
 #
 # If the compilation of the package requires additional
 # compilation or linking flags, then list them here.
 #
-MOTION_CPPFLAGS=-DFFMPEG_AVWRITEFRAME_NEWAPI
-ifeq ($(OPTWARE_TARGET),ds101g)
-MOTION_LDFLAGS="-Wl,-rpath,/usr/syno/mysql/lib/mysql"
-else
+MOTION_CPPFLAGS=
 MOTION_LDFLAGS="-Wl,-rpath,$(TARGET_PREFIX)/lib/mysql" -L$(STAGING_LIB_DIR)/mysql
-endif
 
 #
 # MOTION_BUILD_DIR is the directory in which the build is done.
@@ -92,16 +85,17 @@ endif
 motion-source: $(DL_DIR)/$(MOTION_SOURCE) $(MOTION_PATCHES)
 
 $(MOTION_BUILD_DIR)/.configured: $(DL_DIR)/$(MOTION_SOURCE) $(MOTION_PATCHES) make/motion.mk
-	$(MAKE) libjpeg-stage ffmpeg-stage mysql-stage
+	$(MAKE) libjpeg-stage ffmpeg-stage mysql-stage libjpeg-stage sqlite-stage
 	rm -rf $(BUILD_DIR)/$(MOTION_DIR) $(@D)
 	$(MOTION_UNZIP) $(DL_DIR)/$(MOTION_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(MOTION_PATCHES)" ; \
 		then cat $(MOTION_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(MOTION_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(MOTION_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(MOTION_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(MOTION_DIR) $(@D) ; \
 	fi
+	$(AUTORECONF1.14) -vif $(@D)
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CFLAGS="$(STAGING_CPPFLAGS) $(MOTION_CPPFLAGS)" \
@@ -113,8 +107,10 @@ $(MOTION_BUILD_DIR)/.configured: $(DL_DIR)/$(MOTION_SOURCE) $(MOTION_PATCHES) ma
 		--prefix=$(TARGET_PREFIX) \
 		--disable-nls \
 		--disable-static \
+		$(strip $(if $(filter buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)), --without-v4l2)) \
 		--with-mysql-include=$(STAGING_INCLUDE_DIR)/mysql \
 		--with-mysql-lib=$(STAGING_LIB_DIR)/mysql \
+		--with-sqlite \
 		--without-pgsql \
 		--with-ffmpeg=$(STAGING_PREFIX) \
 	)

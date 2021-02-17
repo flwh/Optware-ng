@@ -21,7 +21,7 @@
 # "NSLU2 Linux" other developers will feel free to edit.
 #
 HPLIP_SITE=http://$(SOURCEFORGE_MIRROR)/sourceforge/hplip
-HPLIP_VERSION=3.14.10
+HPLIP_VERSION=3.17.11
 HPLIP_SOURCE=hplip-$(HPLIP_VERSION).tar.gz
 HPLIP_DIR=hplip-$(HPLIP_VERSION)
 HPLIP_UNZIP=zcat
@@ -29,17 +29,17 @@ HPLIP_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 HPLIP_DESCRIPTION=HP Linux Imaging and Printing
 HPLIP_SECTION=misc
 HPLIP_PRIORITY=optional
-HPLIP_DEPENDS=sane-backends, python25, libstdc++, libusb1
+HPLIP_DEPENDS=sane-backends, python27, py27-dbus-python, libstdc++, libusb1, libcups, libcupsimage, libjbigkit, libidn
 ifneq (, $(filter net-snmp, $(PACKAGES)))
 HPLIP_DEPENDS +=, net-snmp
 endif
-HPLIP_SUGGESTS=cups, dbus
+HPLIP_SUGGESTS=cups
 HPLIP_CONFLICTS=
 
 #
 # HPLIP_IPK_VERSION should be incremented when the ipk changes.
 #
-HPLIP_IPK_VERSION=1
+HPLIP_IPK_VERSION=4
 
 #
 # HPLIP_CONFFILES should be a list of user-editable files
@@ -52,14 +52,23 @@ HPLIP_CONFFILES=$(TARGET_PREFIX)/etc/hp/hplip.conf \
 # HPLIP_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-#HPLIP_PATCHES=$(HPLIP_SOURCE_DIR)/configure.patch
+HPLIP_PATCHES=\
+$(HPLIP_SOURCE_DIR)/configure.in.patch \
+$(HPLIP_SOURCE_DIR)/state-dir.patch \
+$(HPLIP_SOURCE_DIR)/cross-compile.patch \
+$(HPLIP_SOURCE_DIR)/libhpdiscovery.patch \
+$(HPLIP_SOURCE_DIR)/force_PYTHONINCLUDEDIR.patch \
+$(HPLIP_SOURCE_DIR)/boolean.patch \
+$(HPLIP_SOURCE_DIR)/models.dat-location.patch \
+$(HPLIP_SOURCE_DIR)/optware-paths.patch \
+$(HPLIP_SOURCE_DIR)/magic.py.patch \
 
 #
 # If the compilation of the package requires additional
 # compilation or linking flags, then list them here.
 #
-HPLIP_CPPFLAGS=-I$(STAGING_INCLUDE_DIR)/libusb-1.0
-HPLIP_LDFLAGS=-lm
+HPLIP_CPPFLAGS=-I$(STAGING_INCLUDE_DIR)/libusb-1.0 -I$(STAGING_INCLUDE_DIR)/python2.7
+HPLIP_LDFLAGS=-lz -ljpeg -lusb-1.0 -lcups -lpng -ltiff
 
 ifeq (, $(filter net-snmp, $(PACKAGES)))
 HPLIP_CONFIG_ARGS += --disable-network-build
@@ -115,7 +124,8 @@ hplip-source: $(DL_DIR)/$(HPLIP_SOURCE) $(HPLIP_PATCHES)
 # shown below to make various patches to it.
 #
 $(HPLIP_BUILD_DIR)/.configured: $(DL_DIR)/$(HPLIP_SOURCE) $(HPLIP_PATCHES) make/hplip.mk
-	$(MAKE) cups-stage dbus-stage python25-stage sane-backends-stage libusb1-stage
+	$(MAKE) cups-stage dbus-stage python27-stage python27-host-stage \
+		sane-backends-stage libusb1-stage libjbigkit-stage libidn-stage
 ifneq (, $(filter net-snmp, $(PACKAGES)))
 	$(MAKE) net-snmp-stage
 endif
@@ -123,28 +133,29 @@ endif
 	$(HPLIP_UNZIP) $(DL_DIR)/$(HPLIP_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(HPLIP_PATCHES)" ; \
 		then cat $(HPLIP_PATCHES) | \
-		$(PATCH) -d $(BUILD_DIR)/$(HPLIP_DIR) -p0 ; \
+		$(PATCH) -d $(BUILD_DIR)/$(HPLIP_DIR) -p1 ; \
 	fi
 	if test "$(BUILD_DIR)/$(HPLIP_DIR)" != "$(@D)" ; \
 		then mv $(BUILD_DIR)/$(HPLIP_DIR) $(@D) ; \
 	fi
-#	sed -i -e 's|/etc/|$(TARGET_PREFIX)&|; /halpredir/s|/usr/share|$(TARGET_PREFIX)/share|' $(@D)/Makefile.am ; \
-#	cd $(@D) ; touch INSTALL NEWS README AUTHORS ChangeLog
-#	$(AUTORECONF1.10) -vif $(@D)
-	sed -e "s|-I/usr/local/include||" -i "$(@D)/configure"
+
+	cd $(@D); touch INSTALL NEWS README AUTHORS ChangeLog
+	$(AUTORECONF1.14) -vif $(@D)
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(HPLIP_CPPFLAGS)" \
 		LDFLAGS="$(STAGING_LDFLAGS) $(HPLIP_LDFLAGS)" \
-		PYTHON=$(HOST_STAGING_PREFIX)/bin/python2.5 \
-		PYTHONPATH=$(STAGING_LIB_DIR)/python2.5/site-packages \
+		PYTHON=$(HOST_STAGING_PREFIX)/bin/python2.7 \
+		PYTHONPATH=$(STAGING_LIB_DIR)/python2.7/site-packages \
 		PKG_CONFIG_PATH=$(STAGING_LIB_DIR)/pkgconfig \
+		PYTHONINCLUDEDIR=$(STAGING_INCLUDE_DIR)/python2.7 \
 		./configure \
 		--build=$(GNU_HOST_NAME) \
 		--host=$(GNU_TARGET_NAME) \
 		--target=$(GNU_TARGET_NAME) \
 		--prefix=$(TARGET_PREFIX) \
 		--sysconfdir=$(TARGET_PREFIX)/etc \
+		--with-mimedir=$(TARGET_PREFIX)/etc \
 		--disable-nls \
 		--disable-static \
 		$(HPLIP_CONFIG_ARGS) \
@@ -156,37 +167,6 @@ endif
 		--with-systraydir=$(TARGET_PREFIX)/etc/xdg/autostart \
 		--with-cupsfilterdir=$(TARGET_PREFIX)/lib/cups/filter \
 	)
-	sed -i -e 's| /etc| $(TARGET_PREFIX)/etc|' -e 's|\$$(DESTDIR)/etc|\$$(DESTDIR)$(TARGET_PREFIX)/etc|' -e 's|/var/lib/hp|$(TARGET_PREFIX)/var/lib/hp|' -e \
-		's|/usr/share/cups/mime|$(TARGET_PREFIX)/share/cups/mime|' -e 's|/usr/share/hal/fdi|$(TARGET_PREFIX)/share/hal/fdi|' -e 's|/usr/lib/systemd/system|$(TARGET_PREFIX)/lib/systemd/system|' $(@D)/Makefile
-	sed -i -e 's|/etc|$(TARGET_PREFIX)/etc|' $(@D)/check.py \
-					$(@D)/logcapture.py \
-					$(@D)/ui4/devmgr5.py \
-					$(@D)/prnt/cups.py \
-					$(@D)/ui/devmgr4.py \
-					$(@D)/installer/core_install.py \
-					$(@D)/installer/pluginhandler.py \
-					$(@D)/base/password.py \
-					$(@D)/base/services.py \
-					$(@D)/base/codes.py \
-					$(@D)/base/g.py \
-					$(@D)/base/queues.py \
-					$(@D)/base/utils.py \
-					$(@D)/prnt/filters/hpps \
-					$(@D)/prnt/hpijs/globals.cpp \
-					$(@D)/prnt/hpijs/hpcupsfax.cpp \
-					$(@D)/prnt/hpijs/hpijs.cpp \
-					$(@D)/prnt/hpcups/HPCupsFilter.cpp \
-					$(@D)/fax/backend/hpfax.py
-	sed -i -e 's|/etc|$(TARGET_PREFIX)/etc|g' $(@D)/data/rules/56-hpmud.rules
-	sed -i -e 's|/var/lib/hp|$(TARGET_PREFIX)/var/lib/hp|' $(@D)/installer/core_install.py \
-							$(@D)/installer/pluginhandler.py \
-							$(@D)/base/g.py \
-							$(@D)/check.py \
-							$(@D)/common/utils.c \
-							$(@D)/common/utils.h
-	sed -i -e 's|/usr/lib/systemd/system|$(TARGET_PREFIX)/lib/systemd/system|' $(@D)/installer/core_install.py
-	sed -i -e 's|filename\.startswith("$(TARGET_PREFIX)/etc/")|filename.startswith("/etc/") or filename.startswith("$(TARGET_PREFIX)/etc/")|' $(@D)/base/g.py
-	sed -i -e 's|/usr/share/cups/mime|$(TARGET_PREFIX)/share/cups/mime|' $(@D)/prnt/cups.py
 	$(PATCH_LIBTOOL) $(@D)/libtool
 	touch $@
 
@@ -197,9 +177,10 @@ hplip-unpack: $(HPLIP_BUILD_DIR)/.configured
 #
 $(HPLIP_BUILD_DIR)/.built: $(HPLIP_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(@D) PYTHONINCLUDEDIR="$(STAGING_INCLUDE_DIR)/python2.5"
-	### use $(TARGET_PREFIX)/bin/python2.5
-	sed -i -e 's|^#!.*|#!$(TARGET_PREFIX)/bin/python2.5|' `find $(@D) -type f -name "*.py"`
+	$(MAKE) -C $(@D)
+	### use $(TARGET_PREFIX)/bin/python2.7
+	sed -i -e 's|^#!.*|#!$(TARGET_PREFIX)/bin/python2.7|' `find $(@D) -type f -name "*.py"` \
+		$(@D)/fax/filters/pstotiff $(@D)/prnt/filters/hpps
 	touch $@
 
 #
@@ -212,7 +193,7 @@ hplip: $(HPLIP_BUILD_DIR)/.built
 #
 $(HPLIP_BUILD_DIR)/.staged: $(HPLIP_BUILD_DIR)/.built
 	rm -f $@
-	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install
+	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install -j1
 	touch $@
 
 hplip-stage: $(HPLIP_BUILD_DIR)/.staged
@@ -250,9 +231,12 @@ $(HPLIP_IPK_DIR)/CONTROL/control:
 #
 $(HPLIP_IPK): $(HPLIP_BUILD_DIR)/.built
 	rm -rf $(HPLIP_IPK_DIR) $(BUILD_DIR)/hplip_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(HPLIP_BUILD_DIR) DESTDIR=$(HPLIP_IPK_DIR) install-strip
+	$(MAKE) -C $(HPLIP_BUILD_DIR) DESTDIR=$(HPLIP_IPK_DIR) install-strip -j1
 	rm -rf $(HPLIP_IPK_DIR)$(TARGET_PREFIX)/lib/*.la $(HPLIP_IPK_DIR)$(TARGET_PREFIX)/lib/*/*.la
+	chmod 755 $(HPLIP_IPK_DIR)$(TARGET_PREFIX)/lib/cups/*
 #	$(INSTALL) -d $(HPLIP_IPK_DIR)$(TARGET_PREFIX)/etc/
+	mv -f $(HPLIP_IPK_DIR)/etc/* $(HPLIP_IPK_DIR)$(TARGET_PREFIX)/etc/
+	rm -rf $(HPLIP_IPK_DIR)/etc
 #	$(INSTALL) -m 644 $(HPLIP_SOURCE_DIR)/hplip.conf $(HPLIP_IPK_DIR)$(TARGET_PREFIX)/etc/hplip.conf
 #	$(INSTALL) -d $(HPLIP_IPK_DIR)$(TARGET_PREFIX)/etc/init.d
 #	$(INSTALL) -m 755 $(HPLIP_SOURCE_DIR)/rc.hplip $(HPLIP_IPK_DIR)$(TARGET_PREFIX)/etc/init.d/SXXhplip

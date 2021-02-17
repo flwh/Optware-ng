@@ -21,7 +21,7 @@
 #
 SAMBA35_SITE=http://www.samba.org/samba/ftp/stable
 SAMBA35_VERSION ?= 3.5.22
-SAMBA35_IPK_VERSION ?= 3
+SAMBA35_IPK_VERSION ?= 5
 SAMBA35_SOURCE=samba-$(SAMBA35_VERSION).tar.gz
 SAMBA35_DIR=samba-$(SAMBA35_VERSION)
 SAMBA35_UNZIP=zcat
@@ -29,7 +29,7 @@ SAMBA35_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 SAMBA35_DESCRIPTION=Samba suite provides file and print services to SMB/CIFS clients. This is a newer version.
 SAMBA35_SECTION=net
 SAMBA35_PRIORITY=optional
-SAMBA35_DEPENDS=avahi, popt, readline, zlib, e2fsprogs, libacl, cups
+SAMBA35_DEPENDS=avahi, popt, readline, zlib, e2fsprogs, libacl, cups, libintl, libpam
 ifeq (openldap, $(filter openldap, $(PACKAGES)))
 SAMBA35_DEPENDS +=, openldap-libs
 endif
@@ -70,7 +70,7 @@ endif
 # compilation or linking flags, then list them here.
 #
 SAMBA35_CPPFLAGS= -I$(STAGING_INCLUDE_DIR)/et
-SAMBA35_LDFLAGS=-lpthread
+SAMBA35_LDFLAGS=-lpthread -lintl
 
 #
 # SAMBA35_BUILD_DIR is the directory in which the build is done.
@@ -213,7 +213,8 @@ $(SAMBA35_BUILD_DIR)/.configured: $(DL_DIR)/$(SAMBA35_SOURCE) $(SAMBA35_PATCHES)
 ifeq (openldap, $(filter openldap, $(PACKAGES)))
 	$(MAKE) openldap-stage 
 endif
-	$(MAKE) avahi-stage cups-stage popt-stage readline-stage zlib-stage e2fsprogs-stage libacl-stage
+	$(MAKE) avahi-stage cups-stage popt-stage readline-stage zlib-stage e2fsprogs-stage \
+		libacl-stage gettext-stage libpam-stage
 	rm -rf $(BUILD_DIR)/$(SAMBA35_DIR) $(@D)
 	$(SAMBA35_UNZIP) $(DL_DIR)/$(SAMBA35_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	cat $(SAMBA35_PATCHES) | $(PATCH) -d $(BUILD_DIR)/$(SAMBA35_DIR) -p1
@@ -263,6 +264,8 @@ endif
 		$(SAMBA35_CONFIG_ARGS) \
 		--disable-nls \
 	)
+	# opt out from libintl
+	sed -i -e '/^#define HAVE_LIBINTL_H 1/d' $(@D)/source3/include/config.h
 #	Remove Kerberos libs produced by broken configure
 #	sed -i -e 's/KRB5LIBS=.*/KRB5LIBS=/' \
 #	 -e 's/-lgssapi_krb5\|-lkrb5\|-lk5crypto\|-lcom_err\|-lgnutls//g' \
@@ -359,7 +362,7 @@ $(SAMBA35-SWAT_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 $(SAMBA35_IPK) $(SAMBA35-DEV_IPK) $(SAMBA35-SWAT_IPK): $(SAMBA35_BUILD_DIR)/.built
-	rm -rf $(SAMBA35_IPK_DIR) $(BUILD_DIR)/SAMBA35_*_$(TARGET_ARCH).ipk
+	rm -rf $(SAMBA35_IPK_DIR) $(BUILD_DIR)/samba35_*_$(TARGET_ARCH).ipk
 	rm -rf $(SAMBA35-DEV_IPK_DIR) $(BUILD_DIR)/samba35-dev_*_$(TARGET_ARCH).ipk
 	rm -rf $(SAMBA35-SWAT_IPK_DIR) $(BUILD_DIR)/samba35-swat_*_$(TARGET_ARCH).ipk
 	# samba3

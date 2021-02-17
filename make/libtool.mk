@@ -35,13 +35,13 @@ LIBTOOL_CONFLICTS=
 #
 # LIBTOOL_IPK_VERSION should be incremented when the ipk changes.
 #
-LIBTOOL_IPK_VERSION=1
+LIBTOOL_IPK_VERSION=5
 
 #
 # LIBTOOL_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-LIBTOOL_PATCHES=
+LIBTOOL_PATCHES=$(LIBTOOL_SOURCE_DIR)/xassembler.patch
 
 #
 # If the compilation of the package requires additional
@@ -85,10 +85,16 @@ $(DL_DIR)/$(LIBTOOL_SOURCE):
 libtool-source: $(DL_DIR)/$(LIBTOOL_SOURCE) $(LIBTOOL_PATCHES)
 
 
-$(LIBTOOL_HOST_BUILD_DIR)/.built: host/.configured $(DL_DIR)/$(LIBTOOL_SOURCE) make/libtool.mk
+$(LIBTOOL_HOST_BUILD_DIR)/.built: host/.configured $(DL_DIR)/$(LIBTOOL_SOURCE) $(LIBTOOL_PATCHES) make/libtool.mk
 	rm -rf $(HOST_BUILD_DIR)/$(LIBTOOL_DIR) $(@D)
 	$(LIBTOOL_UNZIP) $(DL_DIR)/$(LIBTOOL_SOURCE) | tar -C $(HOST_BUILD_DIR) -xvf -
+	if test -n "$(LIBTOOL_PATCHES)" ; \
+		then cat $(LIBTOOL_PATCHES) | \
+		$(PATCH) -d $(HOST_BUILD_DIR)/$(LIBTOOL_DIR) -bp1 ; \
+	fi
 	mv $(HOST_BUILD_DIR)/$(LIBTOOL_DIR) $(@D)
+	touch $(@D)/build-aux/ltmain.in -r $(@D)/build-aux/ltmain.in.orig
+	touch $(@D)/build-aux/ltmain.sh -r $(@D)/build-aux/ltmain.sh.orig
 	(cd $(@D); \
 		./configure \
 		--prefix=$(HOST_STAGING_PREFIX)	\
@@ -125,7 +131,13 @@ libtool-host-stage: $(LIBTOOL_HOST_BUILD_DIR)/.staged
 $(LIBTOOL_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBTOOL_SOURCE) $(LIBTOOL_PATCHES) make/libtool.mk
 	rm -rf $(BUILD_DIR)/$(LIBTOOL_DIR) $(LIBTOOL_BUILD_DIR)
 	$(LIBTOOL_UNZIP) $(DL_DIR)/$(LIBTOOL_SOURCE) | tar -C $(BUILD_DIR) -xvf -
+	if test -n "$(LIBTOOL_PATCHES)" ; \
+		then cat $(LIBTOOL_PATCHES) | \
+		$(PATCH) -d $(BUILD_DIR)/$(LIBTOOL_DIR) -bp1 ; \
+	fi
 	mv $(BUILD_DIR)/$(LIBTOOL_DIR) $(@D)
+	touch $(@D)/build-aux/ltmain.in -r $(@D)/build-aux/ltmain.in.orig
+	touch $(@D)/build-aux/ltmain.sh -r $(@D)/build-aux/ltmain.sh.orig
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="$(STAGING_CPPFLAGS) $(LIBTOOL_CPPFLAGS)" \
@@ -202,6 +214,16 @@ $(LIBTOOL_IPK): $(LIBTOOL_BUILD_DIR)/.built
 	rm -rf $(LIBTOOL_IPK_DIR) $(BUILD_DIR)/libtool_*_$(TARGET_ARCH).ipk
 	$(MAKE) -C $(LIBTOOL_BUILD_DIR) DESTDIR=$(LIBTOOL_IPK_DIR) install-strip
 	rm -f $(LIBTOOL_IPK_DIR)$(TARGET_PREFIX)/share/info/dir
+	sed -i  -e 's|$(TARGET_CC)|$(TARGET_PREFIX)/bin/gcc|g' 		-e 's|$(TARGET_CXX)|$(TARGET_PREFIX)/bin/g++|g' \
+		-e 's|$(TARGET_LD)|$(TARGET_PREFIX)/bin/ld|g' 		-e 's|$(TARGET_AR)|$(TARGET_PREFIX)/bin/ar|g' \
+		-e 's|$(TARGET_AS)|$(TARGET_PREFIX)/bin/as|g' 		-e 's|$(TARGET_NM)|$(TARGET_PREFIX)/bin/nm|g' \
+		-e 's|$(TARGET_OBJDUMP)|$(TARGET_PREFIX)/bin/objdump|g' -e 's|$(TARGET_RANLIB)|$(TARGET_PREFIX)/bin/ranlib|g' \
+		-e 's|$(TARGET_STRIP)|$(TARGET_PREFIX)/bin/strip|g' \
+		-e 's|$(TARGET_CROSS_TOP)/bin/\.\./|$(TARGET_PREFIX)/|g' \
+		-e 's~[^" \t]*/sysroot/lib\|[^" \t]*/sysroot/usr/lib~$(TARGET_PREFIX)/lib~g' \
+		-e '/^sys_lib_search_path_spec=/s|=.*|="$(TARGET_PREFIX)/lib"|' \
+		-e '/^sys_lib_dlsearch_path_spec=/s|=.*|="$(TARGET_PREFIX)/lib"|' \
+			$(LIBTOOL_IPK_DIR)$(TARGET_PREFIX)/bin/libtool
 	$(MAKE) $(LIBTOOL_IPK_DIR)/CONTROL/control
 #	$(INSTALL) -d $(LIBTOOL_IPK_DIR)/CONTROL
 #	sed -e "s/@ARCH@/$(TARGET_ARCH)/" -e "s/@VERSION@/$(LIBTOOL_VERSION)/" \

@@ -4,16 +4,17 @@
 #
 ###########################################################
 
-PERL-MODULE-BUILD_SITE=http://$(PERL_CPAN_SITE)/CPAN/authors/id/K/KW/KWILLIAMS
-PERL-MODULE-BUILD_VERSION=0.2808
-PERL-MODULE-BUILD_SOURCE=Module-Build-$(PERL-MODULE-BUILD_VERSION).tar.gz
-PERL-MODULE-BUILD_DIR=Module-Build-$(PERL-MODULE-BUILD_VERSION)
+PERL-MODULE-BUILD_SITE=http://$(PERL_CPAN_SITE)/CPAN/authors/id/L/LE/LEONT
+PERL-MODULE-BUILD_VERSION_UPSTREAM=0.42_26
+PERL-MODULE-BUILD_VERSION=0.4226
+PERL-MODULE-BUILD_SOURCE=Module-Build-$(PERL-MODULE-BUILD_VERSION_UPSTREAM).tar.gz
+PERL-MODULE-BUILD_DIR=Module-Build-$(PERL-MODULE-BUILD_VERSION_UPSTREAM)
 PERL-MODULE-BUILD_UNZIP=zcat
 PERL-MODULE-BUILD_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 PERL-MODULE-BUILD_DESCRIPTION=Module-Build - Build and install Perl modules.
 PERL-MODULE-BUILD_SECTION=util
 PERL-MODULE-BUILD_PRIORITY=optional
-PERL-MODULE-BUILD_DEPENDS=perl, perl-archive-tar, perl-extutils-cbuilder, perl-extutils-parsexs, perl-pod-readme, perl-module-signature
+PERL-MODULE-BUILD_DEPENDS=perl
 PERL-MODULE-BUILD_SUGGESTS=
 PERL-MODULE-BUILD_CONFLICTS=
 
@@ -33,7 +34,7 @@ $(DL_DIR)/$(PERL-MODULE-BUILD_SOURCE):
 
 perl-module-build-source: $(DL_DIR)/$(PERL-MODULE-BUILD_SOURCE) $(PERL-MODULE-BUILD_PATCHES)
 
-$(PERL-MODULE-BUILD_BUILD_DIR)/.configured: $(DL_DIR)/$(PERL-MODULE-BUILD_SOURCE) $(PERL-MODULE-BUILD_PATCHES)
+$(PERL-MODULE-BUILD_BUILD_DIR)/.configured: $(DL_DIR)/$(PERL-MODULE-BUILD_SOURCE) $(PERL-MODULE-BUILD_PATCHES) make/perl-module-build.mk
 	$(MAKE) perl-archive-tar-stage perl-extutils-cbuilder-stage perl-extutils-parsexs-stage \
 		perl-pod-readme-stage perl-module-signature-stage
 	rm -rf $(BUILD_DIR)/$(PERL-MODULE-BUILD_DIR) $(PERL-MODULE-BUILD_BUILD_DIR)

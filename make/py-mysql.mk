@@ -30,14 +30,14 @@ PY-MYSQL_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 PY-MYSQL_DESCRIPTION=MySQL support for Python.
 PY-MYSQL_SECTION=misc
 PY-MYSQL_PRIORITY=optional
-PY25-MYSQL_DEPENDS=python25
-PY26-MYSQL_DEPENDS=python26
+PY25-MYSQL_DEPENDS=python25, mysql
+PY26-MYSQL_DEPENDS=python26, mysql
 PY-MYSQL_CONFLICTS=
 
 #
 # PY-MYSQL_IPK_VERSION should be incremented when the ipk changes.
 #
-PY-MYSQL_IPK_VERSION=1
+PY-MYSQL_IPK_VERSION=5
 
 #
 # PY-MYSQL_CONFFILES should be a list of user-editable files
@@ -121,7 +121,7 @@ $(PY-MYSQL_BUILD_DIR)/.configured: $(DL_DIR)/$(PY-MYSQL_SOURCE) $(PY-MYSQL_PATCH
 		echo "[build_ext]"; \
 	        echo "include-dirs=$(STAGING_INCLUDE_DIR):$(STAGING_INCLUDE_DIR)/python2.5"; \
 	        echo "library-dirs=$(STAGING_LIB_DIR):$(STAGING_LIB_DIR)/mysql"; \
-	        echo "libraries=mysqlclient_r"; \
+	        echo "libraries=mysqlclient"; \
 	        echo "rpath=$(TARGET_PREFIX)/lib:$(TARGET_PREFIX)/lib/mysql"; \
 		echo "[build_scripts]"; \
 		echo "executable=$(TARGET_PREFIX)/bin/python2.5" \
@@ -138,7 +138,7 @@ $(PY-MYSQL_BUILD_DIR)/.configured: $(DL_DIR)/$(PY-MYSQL_SOURCE) $(PY-MYSQL_PATCH
 		echo "[build_ext]"; \
 	        echo "include-dirs=$(STAGING_INCLUDE_DIR):$(STAGING_INCLUDE_DIR)/python2.6"; \
 	        echo "library-dirs=$(STAGING_LIB_DIR):$(STAGING_LIB_DIR)/mysql"; \
-	        echo "libraries=mysqlclient_r"; \
+	        echo "libraries=mysqlclient"; \
 	        echo "rpath=$(TARGET_PREFIX)/lib:$(TARGET_PREFIX)/lib/mysql"; \
 		echo "[build_scripts]"; \
 		echo "executable=$(TARGET_PREFIX)/bin/python2.6" \

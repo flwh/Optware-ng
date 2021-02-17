@@ -42,7 +42,7 @@ LIBPTH_CONFLICTS=
 #
 # LIBPTH_IPK_VERSION should be incremented when the ipk changes.
 #
-LIBPTH_IPK_VERSION=2
+LIBPTH_IPK_VERSION=3
 
 #
 # LIBPTH_CONFFILES should be a list of user-editable files
@@ -52,7 +52,8 @@ LIBPTH_IPK_VERSION=2
 # LIBPTH_PATCHES should list any patches, in the the order in
 # which they should be applied to the source code.
 #
-LIBPTH_PATCHES=$(LIBPTH_SOURCE_DIR)/makecontext-less-glibc-linux3.patch
+LIBPTH_PATCHES=\
+$(LIBPTH_SOURCE_DIR)/makecontext-less-glibc-linux3.patch \
 
 #
 # If the compilation of the package requires additional
@@ -106,7 +107,7 @@ libpth-source: $(DL_DIR)/$(LIBPTH_SOURCE) $(LIBPTH_PATCHES)
 # If the compilation of the package requires other packages to be staged
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
-$(LIBPTH_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBPTH_SOURCE) $(LIBPTH_PATCHES)
+$(LIBPTH_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBPTH_SOURCE) $(LIBPTH_PATCHES) make/libpth.mk
 #	$(MAKE) <bar>-stage <baz>-stage
 	rm -rf $(BUILD_DIR)/$(LIBPTH_DIR) $(@D)
 	$(LIBPTH_UNZIP) $(DL_DIR)/$(LIBPTH_SOURCE) | tar -C $(BUILD_DIR) -xvf -
@@ -124,6 +125,9 @@ $(LIBPTH_BUILD_DIR)/.configured: $(DL_DIR)/$(LIBPTH_SOURCE) $(LIBPTH_PATCHES)
 		--target=$(GNU_TARGET_NAME) \
 		--prefix=$(TARGET_PREFIX) \
 		--disable-nls \
+		--with-mctx-mth=mcsc \
+		--with-mctx-dsp=sc \
+		--with-mctx-stk=mc \
 	)
 	$(PATCH_LIBTOOL) $(@D)/libtool
 	touch $@
@@ -135,7 +139,7 @@ libpth-unpack: $(LIBPTH_BUILD_DIR)/.configured
 #
 $(LIBPTH_BUILD_DIR)/.built: $(LIBPTH_BUILD_DIR)/.configured
 	rm -f $@
-	$(MAKE) -C $(@D)
+	$(MAKE) -C $(@D) -j 1
 	touch $@
 
 #
@@ -148,7 +152,7 @@ libpth: $(LIBPTH_BUILD_DIR)/.built
 #
 $(LIBPTH_BUILD_DIR)/.staged: $(LIBPTH_BUILD_DIR)/.built
 	rm -f $@
-	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install-strip
+	$(MAKE) -C $(@D) DESTDIR=$(STAGING_DIR) install-strip -j 1
 	rm -f $(STAGING_LIB_DIR)/libpth.la
 	sed -i -e '/^pth_includedir/s|=.*|=$(STAGING_INCLUDE_DIR)|' $(STAGING_PREFIX)/bin/pth-config
 	touch $@
@@ -188,7 +192,7 @@ $(LIBPTH_IPK_DIR)/CONTROL/control:
 #
 $(LIBPTH_IPK): $(LIBPTH_BUILD_DIR)/.built
 	rm -rf $(LIBPTH_IPK_DIR) $(BUILD_DIR)/libpth_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(LIBPTH_BUILD_DIR) DESTDIR=$(LIBPTH_IPK_DIR) install-strip
+	$(MAKE) -C $(LIBPTH_BUILD_DIR) DESTDIR=$(LIBPTH_IPK_DIR) install-strip -j 1
 	rm -f $(LIBPTH_IPK_DIR)$(TARGET_PREFIX)/lib/libpth.a
 	$(STRIP_COMMAND) $(LIBPTH_IPK_DIR)$(TARGET_PREFIX)/lib/libpth.so.*.*.*
 	$(MAKE) $(LIBPTH_IPK_DIR)/CONTROL/control

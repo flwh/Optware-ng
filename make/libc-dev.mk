@@ -29,33 +29,19 @@ LIBC-DEV_MAINTAINER=NSLU2 Linux <nslu2-linux@yahoogroups.com>
 LIBC-DEV_DESCRIPTION=libc development files.
 LIBC-DEV_SECTION=devel
 LIBC-DEV_PRIORITY=optional
-LIBC-DEV_DEPENDS=libnsl
+LIBC-DEV_DEPENDS=libstdc++
 LIBC-DEV_SUGGESTS=
 LIBC-DEV_CONFLICTS=
 
-ifeq (libstdc++, $(filter libstdc++, $(PACKAGES)))
-	LIBC-DEV_DEPENDS+=, libstdc++
-endif
-
-ifeq (uclibc-opt, $(filter uclibc-opt, $(PACKAGES)))
-	LIBC-DEV_DEPENDS+=, uclibc-opt
-endif
-
-ifeq (glibc-opt, $(filter glibc-opt, $(PACKAGES)))
-	LIBC-DEV_DEPENDS+=, glibc-opt
-endif
-
 LIBC-DEV_IPK_VERSION?=8
 
-ifdef LIBNSL_VERSION
-LIBC-DEV_VERSION=$(LIBNSL_VERSION)
-else
-  ifdef CROSS_CONFIGURATION_UCLIBC_VERSION
+ifeq (uclibc, $(LIBC_STYLE))
 LIBC-DEV_VERSION = $(CROSS_CONFIGURATION_UCLIBC_VERSION)
-  else
-LIBC-DEV_VERSION = 0.9.28
-  endif
+else
+LIBC-DEV_VERSION = $(CROSS_CONFIGURATION_GLIBC_VERSION)
 endif
+
+LIBC-DEV_SOURCE_DIR=$(SOURCE_DIR)/libc-dev
 
 ifdef TARGET_USRLIBDIR
 LIBC-DEV_USRLIBDIR=$(TARGET_USRLIBDIR)
@@ -76,10 +62,10 @@ LIBC-DEV_NONSHARED_LIB_DIR ?= $(LIBC-DEV_LIBC_SO_DIR)
 LIBC-DEV_UCLIBC_STATIC_LIBS ?= libc.a libc_pic.a libcrypt.a libcrypt_pic.a libdl.a \
 libdl_pic.a libm.a libm_pic.a libnsl.a libnsl_pic.a libpthread.a libpthread_pic.a libresolv.a \
 libresolv_pic.a librt.a librt_pic.a libstdc++.a libthread_db.a libthread_db_pic.a libutil.a \
-libutil_pic.a uclibc_nonshared.a
+libutil_pic.a uclibc_nonshared.a libpthread_nonshared.a
 
 LIBC-DEV_GLIBC_STATIC_LIBS ?= libc.a libg.a libm.a libdl.a librt.a libanl.a libnsl.a \
-libieee.a libutil.a libcrypt.a libmcheck.a libresolv.a librpcsvc.a libstdc++.a libpthread.a \
+libieee.a libutil.a libcrypt.a libmcheck.a libresolv.a librpcsvc.a libstdc++*.a libpthread.a \
 libc_nonshared.a libBrokenLocale.a libpthread_nonshared.a
 
 LIBC-DEV_GLIBC-SYMLINK ?= ln -s libanl.so.1 libanl.so; \
@@ -172,72 +158,39 @@ $(LIBC-DEV_IPK): make/libc-dev.mk
 	$(INSTALL) -d $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib
 	-rsync  -rlpgoD --copy-unsafe-links $(TARGET_INCDIR) $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/
 	cp -f $(LIBC-DEV_LIBGCC_STATIC) $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib
-ifeq ($(OPTWARE_TARGET), $(filter buildroot-armeabi buildroot-armeabi-ng buildroot-mipsel buildroot-mipsel-ng shibby-tomato-arm, $(OPTWARE_TARGET)))
 	rm -rf $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/include/zlib.h \
 		$(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/include/zconf.h \
-		$(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/include/iconv.h \
+		$(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/include/libintl.h \
 		$(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/include/openssl
-endif
-ifeq ($(OPTWARE_TARGET), $(filter buildroot-armeabihf buildroot-i686, $(OPTWARE_TARGET)))
-	rm -rf $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/include/zlib.h \
-		$(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/include/zconf.h \
-		$(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/include/openssl
+ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
+	rm -f $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/include/iconv.h
 endif
 	$(INSTALL) -d $(LIBC-DEV_IPK_DIR)/$(LIBC-DEV_CRT_DIR)
 	rsync -l $(LIBC-DEV_USRLIBDIR)/*crt*.o $(LIBC-DEV_IPK_DIR)/$(LIBC-DEV_CRT_DIR)
+	cp -af $(LIBC-DEV_SOURCE_DIR)/libgcc_s.so $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib/
 	$(INSTALL) -d $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib/
-ifeq (wdtv, $(OPTWARE_TARGET))
-	rm -f $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/include/z*.h
-else
 ifeq (uclibc, $(LIBC_STYLE))
+	# static libs
 	cp -af $(addprefix $(LIBC-DEV_NONSHARED_LIB_DIR)/, $(LIBC-DEV_UCLIBC_STATIC_LIBS)) \
 								$(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib
-ifneq (uclibc-opt, $(filter uclibc-opt, $(PACKAGES)))
-	rsync -l \
-		$(TARGET_LIBDIR)/libuClibc-$(LIBC-DEV_VERSION).so \
-		$(LIBC-DEV_USRLIBDIR)/libc.so* \
-		$(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib/
-endif
-else
-	cp -af $(addprefix $(LIBC-DEV_NONSHARED_LIB_DIR)/, $(LIBC-DEV_GLIBC_STATIC_LIBS)) \
-								$(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib
-ifneq (glibc-opt, $(filter glibc-opt, $(PACKAGES)))
-	for f in libc_nonshared.a libpthread_nonshared.a; \
-		do rsync -l $(LIBC-DEV_NONSHARED_LIB_DIR)/$${f} $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib/; done
-	rsync -l $(LIBC-DEV_LIBC_SO_DIR)/libc.so $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib/
-	sed -i -e '/^GROUP/s|.*|GROUP ( /lib/libc.so.6 $(TARGET_PREFIX)/lib/libc_nonshared.a )|' \
-		$(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib/libc.so
-endif
-endif
-ifeq (, $(filter uclibc-opt glibc-opt, $(PACKAGES)))
-	for f in libcrypt libdl libm libpthread libresolv librt libutil \
-		$(if $(filter uclibc, $(LIBC_STYLE)), ld-uClibc, ) \
-		; \
-	do \
-	    rsync -l \
-		$(LIBC-DEV_LIBDIR)/$${f}-[\.0-9]*.so \
-		$(LIBC-DEV_LIBDIR)/$${f}.so[\.0-9]* \
-		$(LIBC-DEV_IPK_DIR)/$(LIBC-DEV_CRT_DIR); \
-	    cd $(LIBC-DEV_IPK_DIR)/$(LIBC-DEV_CRT_DIR); \
-	    if test $${f} != ld-uClibc -a ! -e $${f}.so; then \
-		ln -sf $${f}.so.* $${f}.so; \
-	    fi; \
-	done
-else
-ifeq (uclibc-opt, $(filter uclibc-opt, $(PACKAGES)))
+	# shared libs links
 	cd $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib; \
 		for f in libc.so libcrypt.so libdl.so libm.so libpthread.so libresolv.so librt.so libutil.so; do \
 			if [ -f $(UCLIBC-OPT_LIBS_SOURCE_DIR)/$${f}.1 ]; then \
 				ln -s $${f}.1 $${f}; \
-			else \
+			elif [ -f $(UCLIBC-OPT_LIBS_SOURCE_DIR)/$${f}.0 ]; then \
 				ln -s $${f}.0 $${f}; \
+			else \
+				: do nothing; \
 			fi \
 		done
 else
+	# static libs
+	cp -af $(addprefix $(LIBC-DEV_NONSHARED_LIB_DIR)/, $(LIBC-DEV_GLIBC_STATIC_LIBS)) \
+								$(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib
+	# shared libs links
 	cd $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib; \
 		$(LIBC-DEV_GLIBC-SYMLINK)
-endif
-endif
 endif
 	if [ -f $(SOURCE_DIR)/$(OPTWARE_TARGET)/libc.so ]; then \
 		rm -f $(LIBC-DEV_IPK_DIR)$(TARGET_PREFIX)/lib/libc.so; \
@@ -247,6 +200,7 @@ endif
 	$(MAKE) $(LIBC-DEV_IPK_DIR)/CONTROL/control
 	echo $(LIBC-DEV_CONFFILES) | sed -e 's/ /\n/g' > $(LIBC-DEV_IPK_DIR)/CONTROL/conffiles
 	cd $(BUILD_DIR); $(IPKG_BUILD) $(LIBC-DEV_IPK_DIR)
+	$(WHAT_TO_DO_WITH_IPK_DIR) $(LIBC-DEV_IPK_DIR)
 
 #
 # This is called from the top level makefile to create the IPK file.

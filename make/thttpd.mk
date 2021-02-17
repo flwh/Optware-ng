@@ -41,7 +41,7 @@ THTTPD_CONFLICTS=
 #
 # THTTPD_IPK_VERSION should be incremented when the ipk changes.
 #
-THTTPD_IPK_VERSION=1
+THTTPD_IPK_VERSION=2
 
 #
 # THTTPD_CONFFILES should be a list of user-editable files
@@ -54,7 +54,8 @@ THTTPD_CONFFILES=$(TARGET_PREFIX)/etc/init.d/S80thttpd $(TARGET_PREFIX)/etc/thtt
 THTTPD_PATCHES=$(THTTPD_SOURCE_DIR)/Makefile.in.patch \
 		$(THTTPD_SOURCE_DIR)/configure.patch \
 		$(THTTPD_SOURCE_DIR)/config.h.patch \
-		$(THTTPD_SOURCE_DIR)/mime_types.patch 
+		$(THTTPD_SOURCE_DIR)/mime_types.patch \
+		$(THTTPD_SOURCE_DIR)/fix_parallel_build.patch 
 
 #
 # If the compilation of the package requires additional
@@ -106,7 +107,7 @@ thttpd-source: $(DL_DIR)/$(THTTPD_SOURCE) $(THTTPD_PATCHES)
 # If the compilation of the package requires other packages to be staged
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
-$(THTTPD_BUILD_DIR)/.configured: $(DL_DIR)/$(THTTPD_SOURCE) $(THTTPD_PATCHES)
+$(THTTPD_BUILD_DIR)/.configured: $(DL_DIR)/$(THTTPD_SOURCE) $(THTTPD_PATCHES) make/thttpd.mk
 	#$(MAKE) <bar>-stage <baz>-stage
 	rm -rf $(BUILD_DIR)/$(THTTPD_DIR) $(THTTPD_BUILD_DIR)
 	$(THTTPD_UNZIP) $(DL_DIR)/$(THTTPD_SOURCE) | tar -C $(BUILD_DIR) -xvf -
@@ -146,7 +147,7 @@ thttpd: $(THTTPD_BUILD_DIR)/.built
 #
 $(THTTPD_BUILD_DIR)/.staged: $(THTTPD_BUILD_DIR)/.built
 	rm -f $(THTTPD_BUILD_DIR)/.staged
-	$(MAKE) -C $(THTTPD_BUILD_DIR) DESTDIR=$(STAGING_DIR) install
+	$(MAKE) -C $(THTTPD_BUILD_DIR) DESTDIR=$(STAGING_DIR) install -j1
 	touch $(THTTPD_BUILD_DIR)/.staged
 
 thttpd-stage: $(THTTPD_BUILD_DIR)/.staged
@@ -183,7 +184,7 @@ $(THTTPD_IPK_DIR)/CONTROL/control:
 #
 $(THTTPD_IPK): $(THTTPD_BUILD_DIR)/.built
 	rm -rf $(THTTPD_IPK_DIR) $(BUILD_DIR)/thttpd_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(THTTPD_BUILD_DIR) DESTDIR=$(THTTPD_IPK_DIR) install
+	$(MAKE) -C $(THTTPD_BUILD_DIR) DESTDIR=$(THTTPD_IPK_DIR) install -j1
 	chmod +w $(THTTPD_IPK_DIR)$(TARGET_PREFIX)/sbin/thttpd && \
 	$(STRIP_COMMAND) $(THTTPD_IPK_DIR)$(TARGET_PREFIX)/sbin/thttpd && \
 	chmod -w $(THTTPD_IPK_DIR)$(TARGET_PREFIX)/sbin/thttpd && \

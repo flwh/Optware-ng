@@ -29,7 +29,7 @@ NTP_MAINTAINER=Christopher <edmondsc@onid.ors.edu>
 NTP_DESCRIPTION=A time synchronization daemon
 NTP_SECTION=net
 NTP_PRIORITY=optional
-NTP_DEPENDS=psmisc
+NTP_DEPENDS=libcap, busybox-base
 NTP_SUGGESTS=
 NTP_CONFLICTS=
 
@@ -37,7 +37,7 @@ NTP_CONFLICTS=
 #
 # NTP_IPK_VERSION should be incremented when the ipk changes.
 #
-NTP_IPK_VERSION=1
+NTP_IPK_VERSION=3
 
 NTP_CONFFILES=$(TARGET_PREFIX)/etc/ntp/ntp.conf $(TARGET_PREFIX)/etc/init.d/S77ntp
 
@@ -106,6 +106,7 @@ ntp-source: $(DL_DIR)/$(NTP_SOURCE) $(NTP_PATCHES)
 # first, then do that first (e.g. "$(MAKE) <bar>-stage <baz>-stage").
 #
 $(NTP_BUILD_DIR)/.configured: $(DL_DIR)/$(NTP_SOURCE) $(NTP_PATCHES) make/ntp.mk
+	$(MAKE) libcap-stage
 	rm -rf $(BUILD_DIR)/$(NTP_DIR) $(@D)
 	$(NTP_UNZIP) $(DL_DIR)/$(NTP_SOURCE) | tar -C $(BUILD_DIR) -xvf -
 	if test -n "$(NTP_PATCHES)" ; \
@@ -180,7 +181,7 @@ $(NTP_IPK_DIR)/CONTROL/control:
 # You may need to patch your application to make it use these locations.
 #
 $(NTP_IPK): $(NTP_BUILD_DIR)/.built
-	rm -rf $(NTP_IPK_DIR) $(NTP_IPK)
+	rm -rf $(NTP_IPK_DIR) $(BUILD_DIR)/ntp_*_$(TARGET_ARCH).ipk
 	$(INSTALL) -d $(NTP_IPK_DIR)$(TARGET_PREFIX)/bin
 	$(INSTALL) -d $(NTP_IPK_DIR)$(TARGET_PREFIX)/etc/ntp/keys
 	$(INSTALL) -d $(NTP_IPK_DIR)/var/spool/ntp

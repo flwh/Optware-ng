@@ -42,7 +42,7 @@ EGGDROP_CONFLICTS=
 #
 # EGGDROP_IPK_VERSION should be incremented when the ipk changes.
 #
-EGGDROP_IPK_VERSION=1
+EGGDROP_IPK_VERSION=2
 
 #
 # EGGDROP_CONFFILES should be a list of user-editable files
@@ -177,7 +177,7 @@ $(EGGDROP_IPK_DIR)/CONTROL/control:
 #
 $(EGGDROP_IPK): $(EGGDROP_BUILD_DIR)/.built
 	rm -rf $(EGGDROP_IPK_DIR) $(BUILD_DIR)/eggdrop_*_$(TARGET_ARCH).ipk
-	$(MAKE) -C $(EGGDROP_BUILD_DIR) DEST=$(EGGDROP_IPK_DIR)$(TARGET_PREFIX)/share/eggdrop install
+	$(MAKE) -C $(EGGDROP_BUILD_DIR) DEST=$(EGGDROP_IPK_DIR)$(TARGET_PREFIX)/share/eggdrop install -j 1
 	$(STRIP_COMMAND) $(EGGDROP_IPK_DIR)$(TARGET_PREFIX)/share/eggdrop/eggdrop-$(EGGDROP_VERSION)
 	$(STRIP_COMMAND) $(EGGDROP_IPK_DIR)$(TARGET_PREFIX)/share/eggdrop/modules-$(EGGDROP_VERSION)/*.so
 	mv $(EGGDROP_IPK_DIR)$(TARGET_PREFIX)/share/eggdrop/eggdrop.conf $(EGGDROP_IPK_DIR)$(TARGET_PREFIX)/share/eggdrop/eggdrop-orig.conf

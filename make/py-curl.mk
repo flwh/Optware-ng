@@ -22,8 +22,8 @@
 # "NSLU2 Linux" other developers will feel free to edit.
 #
 PY-CURL_SITE=http://pycurl.sourceforge.net/download
-PY-CURL_VERSION=7.19.5.1
-PY-CURL_VERSION_OLD=7.19.5.1
+PY-CURL_VERSION=7.21.5
+PY-CURL_VERSION_OLD=7.21.5
 PY-CURL_SOURCE=pycurl-$(PY-CURL_VERSION).tar.gz
 PY-CURL_SOURCE_OLD=pycurl-$(PY-CURL_VERSION_OLD).tar.gz
 PY-CURL_DIR=pycurl-$(PY-CURL_VERSION)
@@ -42,7 +42,7 @@ PY-CURL_CONFLICTS=
 #
 # PY-CURL_IPK_VERSION should be incremented when the ipk changes.
 #
-PY-CURL_IPK_VERSION=1
+PY-CURL_IPK_VERSION=7
 
 #
 # PY-CURL_CONFFILES should be a list of user-editable files
@@ -210,18 +210,22 @@ $(PY-CURL_BUILD_DIR)/.built: $(PY-CURL_BUILD_DIR)/.configured
 	cd $(@D)/2.5; \
 	    CC='$(TARGET_CC)' LDSHARED='$(TARGET_CC) -shared' \
 	    $(HOST_STAGING_PREFIX)/bin/python2.5 setup.py build \
+	    --with-openssl \
 	    --curl-config=$(STAGING_PREFIX)/bin/curl-config
 	cd $(@D)/2.6; \
 	    CC='$(TARGET_CC)' LDSHARED='$(TARGET_CC) -shared' \
 	    $(HOST_STAGING_PREFIX)/bin/python2.6 setup.py build \
+	    --with-openssl \
 	    --curl-config=$(STAGING_PREFIX)/bin/curl-config
 	cd $(@D)/2.7; \
 	    CC='$(TARGET_CC)' LDSHARED='$(TARGET_CC) -shared' \
 	    $(HOST_STAGING_PREFIX)/bin/python2.7 setup.py build \
+	    --with-openssl \
 	    --curl-config=$(STAGING_PREFIX)/bin/curl-config
 	cd $(@D)/3; \
 	    CC='$(TARGET_CC)' LDSHARED='$(TARGET_CC) -shared' \
 	    $(HOST_STAGING_PREFIX)/bin/python$(PYTHON3_VERSION_MAJOR) setup.py build \
+	    --with-openssl \
 	    --curl-config=$(STAGING_PREFIX)/bin/curl-config
 	touch $@
 

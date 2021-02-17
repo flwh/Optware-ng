@@ -42,7 +42,7 @@ XMAIL_CONFLICTS=
 #
 # XMAIL_IPK_VERSION should be incremented when the ipk changes.
 #
-XMAIL_IPK_VERSION=1
+XMAIL_IPK_VERSION=3
 
 #
 # XMAIL_CONFFILES should be a list of user-editable files
@@ -59,16 +59,25 @@ XMAIL_IPK_VERSION=1
 XMAIL_PATCHES=\
 	$(XMAIL_SOURCE_DIR)/xmail.patch \
 	$(XMAIL_SOURCE_DIR)/conditionally-disable-ipv6.patch \
+	$(XMAIL_SOURCE_DIR)/conditionally-disable-eventfd.patch \
 
 #
 # If the compilation of the package requires additional
 # compilation or linking flags, then list them here.
 #
-XMAIL_CPPFLAGS=
-ifeq ($(OPTWARE_TARGET), $(filter gumstix1151 mbwe-bluering, $(OPTWARE_TARGET)))
-XMAIL_CPPFLAGS += -DDISABLE_IPV6
-endif
+XMAIL_CPPFLAGS=-Wno-error=narrowing
 XMAIL_LDFLAGS=
+
+XMAIL_MAKE_ARGS=$(TARGET_CONFIGURE_OPTS) \
+		CC=$(TARGET_CXX) \
+		LD=$(TARGET_CXX) \
+		CPPFLAGS="$(STAGING_CPPFLAGS) $(XMAIL_CPPFLAGS)" \
+		WITH_SSL_INCLUDE=$(STAGING_INCLUDE_DIR)/openssl \
+		WITH_SSL_LIB=$(STAGING_LIB_DIR) \
+
+ifeq ($(OPTWARE_TARGET), $(filter buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
+XMAIL_MAKE_ARGS += HAS_NO_EVENTFD=1
+endif
 
 #
 # XMAIL_BUILD_DIR is the directory in which the build is done.
@@ -143,14 +152,7 @@ ifneq ($(HOSTCC), $(TARGET_CC))
 	else sed -i -e 's/.*MACH_BIG_ENDIAN/#undef MACH_BIG_ENDIAN/' $(@D)/SysMachine.h; \
 	fi
 endif
-	$(MAKE) -C $(@D) -f Makefile.lnx \
-		$(TARGET_CONFIGURE_OPTS) \
-		CC=$(TARGET_CXX) \
-		LD=$(TARGET_CXX) \
-		CPPFLAGS="$(STAGING_CPPFLAGS) $(XMAIL_CPPFLAGS)" \
-		WITH_SSL_INCLUDE=$(STAGING_INCLUDE_DIR)/openssl \
-		WITH_SSL_LIB=$(STAGING_LIB_DIR) \
-		;
+	$(MAKE) -C $(@D) -f Makefile.lnx $(XMAIL_MAKE_ARGS)
 	touch $@
 
 #

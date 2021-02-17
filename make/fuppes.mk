@@ -31,9 +31,6 @@ with optional on-the-fly audio transcondig from ogg/vorbis, mpc/musepack and FLA
 FUPPES_SECTION=audio
 FUPPES_PRIORITY=optional
 FUPPES_DEPENDS=e2fslibs, libxml2, pcre, sqlite
-ifeq ($(FFMPEG_OLD), yes)
-TRANSCODE_DEPENDS+=, ffmpeg
-endif
 ifeq (taglib, $(filter taglib, $(PACKAGES)))
 FUPPES_DEPENDS+=, taglib
 endif
@@ -46,7 +43,7 @@ FUPPES_CONFLICTS=
 #
 # FUPPES_IPK_VERSION should be incremented when the ipk changes.
 #
-FUPPES_IPK_VERSION=1
+FUPPES_IPK_VERSION=2
 
 #
 # FUPPES_CONFFILES should be a list of user-editable files
@@ -57,9 +54,7 @@ FUPPES_IPK_VERSION=1
 # which they should be applied to the source code.
 #
 FUPPES_PATCHES=$(FUPPES_SOURCE_DIR)/missing-includes.patch
-ifneq ($(FFMPEG_OLD), yes)
 FUPPES_PATCHES+=$(FUPPES_SOURCE_DIR)/metadata_libavformat.patch
-endif
 
 #
 # If the compilation of the package requires additional
@@ -69,6 +64,12 @@ FUPPES_CPPFLAGS=-I$(STAGING_INCLUDE_DIR)/ffmpeg
 FUPPES_LDFLAGS=
 ifeq (libiconv, $(filter libiconv, $(PACKAGES)))
 FUPPES_LDFLAGS+=-liconv
+endif
+
+ifeq ($(OPTWARE_TARGET), $(filter buildroot-armv5eabi-ng-legacy, $(OPTWARE_TARGET)))
+FUPPES-CONFIGURE_ARGS=--disable-inotify
+else
+FUPPES-CONFIGURE_ARGS=--enable-inotify
 endif
 
 #
@@ -127,14 +128,7 @@ fuppes-source: $(DL_DIR)/$(FUPPES_SOURCE) $(FUPPES_PATCHES)
 # shown below to make various patches to it.
 #
 $(FUPPES_BUILD_DIR)/.configured: $(DL_DIR)/$(FUPPES_SOURCE) $(FUPPES_PATCHES) make/fuppes.mk
-	$(MAKE) e2fsprogs-stage libxml2-stage pcre-stage sqlite-stage
-ifeq ($(FFMPEG_OLD), yes)
-	$(MAKE) ffmpeg-stage
-else
-#	fuppes needs old ffmpeg
-#	Following command builds and stages headers and static ffmpeg libs to $(STAGING_PREFIX)/ffmpeg_old
-	$(MAKE) ffmpeg-old-stage
-endif
+	$(MAKE) e2fsprogs-stage libxml2-stage pcre-stage sqlite-stage ffmpeg-old-stage
 ifeq (taglib, $(filter taglib, $(PACKAGES)))
 	$(MAKE) taglib-stage
 endif
@@ -153,6 +147,7 @@ endif
 	(cd $(@D); \
 		$(TARGET_CONFIGURE_OPTS) \
 		CPPFLAGS="-I$(STAGING_PREFIX)/ffmpeg_old/include $(STAGING_CPPFLAGS) $(FUPPES_CPPFLAGS)" \
+		CXXFLAGS="-std=c++98" \
 		LDFLAGS="-L$(STAGING_PREFIX)/ffmpeg_old/lib $(STAGING_LDFLAGS) $(FUPPES_LDFLAGS)" \
 		PKG_CONFIG_PATH=$(STAGING_LIB_DIR)/pkgconfig \
 		$(FUPPES_WITH_TAGLIB) \
@@ -166,6 +161,7 @@ endif
 		--disable-nls \
 		--disable-static \
 		--disable-ffmpegthumbnailer \
+		$(FUPPES-CONFIGURE_ARGS) \
 	)
 	sed -i -e 's|-I$(TARGET_PREFIX)/include | |g' $(@D)/Makefile $(@D)/src/Makefile
 	$(PATCH_LIBTOOL) $(@D)/libtool

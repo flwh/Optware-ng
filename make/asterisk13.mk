@@ -79,7 +79,7 @@ ASTERISK13_CONFLICTS=asterisk18,asterisk10,asterisk11
 #
 # ASTERISK13_IPK_VERSION should be incremented when the ipk changes.
 #
-ASTERISK13_IPK_VERSION=1
+ASTERISK13_IPK_VERSION=4
 
 #
 # ASTERISK13_CONFFILES should be a list of user-editable files
@@ -326,8 +326,8 @@ endif
 ifeq (, $(filter -pipe, $(TARGET_CUSTOM_FLAGS)))
 	sed -i -e '/+= *-pipe/s/^/#/' $(@D)/Makefile
 endif
-ifeq ($(OPTWARE_TARGET), $(filter buildroot-armeabi buildroot-armeabi-ng buildroot-armv5eabi-ng buildroot-mipsel buildroot-mipsel-ng, $(OPTWARE_TARGET)))
-#	no res_nsearch() in uClibc 0.9.33.2
+ifeq ($(OPTWARE_TARGET), $(filter buildroot-armeabi buildroot-armeabi-ng buildroot-armv5eabi-ng buildroot-armv5eabi-ng-legacy buildroot-mipsel buildroot-mipsel-ng, $(OPTWARE_TARGET)))
+#	no res_nsearch() in uClibc
 	sed -i -e '/AC_DEFINE(\[HAVE_RES_NINIT\]/d' $(@D)/configure.ac
 endif
 	sed -i -e "s/AC_CHECK_HEADERS..xlocale\.h../###########/" $(@D)/configure.ac
@@ -362,7 +362,7 @@ endif
 		--with-unixodbc=$(STAGING_PREFIX) \
 		--with-netsnmp=$(STAGING_PREFIX) \
 		--with-ltdl=$(STAGING_PREFIX) \
-		--with-mysqlclient=$(STAGING_PREFIX) \
+		--with-mysqlclient \
 		--with-bluetooth=$(STAGING_PREFIX) \
 		--with-jansson=$(STAGING_PREFIX) \
 		--without-srtp \
@@ -387,10 +387,10 @@ asterisk13-unpack: $(ASTERISK13_BUILD_DIR)/.configured
 #
 $(ASTERISK13_BUILD_DIR)/.built: $(ASTERISK13_BUILD_DIR)/.configured
 	rm -f $@
-	ASTCFLAGS="$(ASTERISK13_CPPFLAGS)" \
+	ASTCFLAGS="$(TARGET_CUSTOM_FLAGS) $(ASTERISK13_CPPFLAGS)" \
 	ASTLDFLAGS="$(STAGING_LDFLAGS) $(ASTERISK13_LDFLAGS)" \
 	$(MAKE) NOISY_BUILD=$(NOISY_BUILD) -C $(@D) menuselect.makeopts || \
-	ASTCFLAGS="$(ASTERISK13_CPPFLAGS)" \
+	ASTCFLAGS="$(TARGET_CUSTOM_FLAGS) $(ASTERISK13_CPPFLAGS)" \
 	ASTLDFLAGS="$(STAGING_LDFLAGS) $(ASTERISK13_LDFLAGS)" \
 	$(MAKE) NOISY_BUILD=$(NOISY_BUILD) -C $(@D) menuselect.makeopts
 	# enable addons, disable mp3
@@ -403,9 +403,9 @@ $(ASTERISK13_BUILD_DIR)/.built: $(ASTERISK13_BUILD_DIR)/.configured
 	#mv -f menuselect.makedeps.no_srtp menuselect.makedeps; \
 	#sed -i -e "s|<depend>srtp</depend>||" menuselect-tree; \
 	#sed -i -e "s|clean::|res_srtp.so: _ASTLDFLAGS+=libsrtp.a\n\nclean::|" res/Makefile )
-	ASTCFLAGS="$(ASTERISK13_CPPFLAGS)" \
+	ASTCFLAGS="$(TARGET_CUSTOM_FLAGS) $(ASTERISK13_CPPFLAGS)" \
 	ASTLDFLAGS="$(STAGING_LDFLAGS) $(ASTERISK13_LDFLAGS)" \
-	$(MAKE) NOISY_BUILD=$(NOISY_BUILD) -C $(@D)
+	$(MAKE) NOISY_BUILD=$(NOISY_BUILD) -C $(@D) $(strip $(if $(filter ct-ng-ppc-e500v2, $(OPTWARE_TARGET)), OPTIMIZE=-O2))
 	touch $@
 
 #
@@ -418,7 +418,7 @@ asterisk13: $(ASTERISK13_BUILD_DIR)/.built
 #
 $(ASTERISK13_BUILD_DIR)/.staged: $(ASTERISK13_BUILD_DIR)/.built
 	rm -f $(ASTERISK13_BUILD_DIR)/.staged
-	ASTCFLAGS="$(ASTERISK13_CPPFLAGS)" \
+	ASTCFLAGS="$(TARGET_CUSTOM_FLAGS) $(ASTERISK13_CPPFLAGS)" \
 	ASTLDFLAGS="$(STAGING_LDFLAGS) $(ASTERISK13_LDFLAGS)" \
 	$(MAKE) NOISY_BUILD=$(NOISY_BUILD) -C $(ASTERISK13_BUILD_DIR) DESTDIR=$(STAGING_DIR) ASTSBINDIR=$(TARGET_PREFIX)/sbin install
 	touch $(ASTERISK13_BUILD_DIR)/.staged
@@ -458,10 +458,10 @@ $(ASTERISK13_IPK_DIR)/CONTROL/control:
 #
 $(ASTERISK13_IPK): $(ASTERISK13_BUILD_DIR)/.built
 	rm -rf $(ASTERISK13_IPK_DIR) $(BUILD_DIR)/asterisk13_*_$(TARGET_ARCH).ipk
-	ASTCFLAGS="$(ASTERISK13_CPPFLAGS)" \
+	ASTCFLAGS="$(TARGET_CUSTOM_FLAGS) $(ASTERISK13_CPPFLAGS)" \
 	ASTLDFLAGS="$(STAGING_LDFLAGS) $(ASTERISK13_LDFLAGS)" \
 	$(MAKE) NOISY_BUILD=$(NOISY_BUILD) -C $(ASTERISK13_BUILD_DIR) DESTDIR=$(ASTERISK13_IPK_DIR) ASTSBINDIR=$(TARGET_PREFIX)/sbin install
-	ASTCFLAGS="$(ASTERISK13_CPPFLAGS)" \
+	ASTCFLAGS="$(TARGET_CUSTOM_FLAGS) $(ASTERISK13_CPPFLAGS)" \
 	ASTLDFLAGS="$(STAGING_LDFLAGS) $(ASTERISK13_LDFLAGS)" \
 	$(MAKE) NOISY_BUILD=$(NOISY_BUILD) -C $(ASTERISK13_BUILD_DIR) DESTDIR=$(ASTERISK13_IPK_DIR) samples
 
